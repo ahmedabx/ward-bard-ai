@@ -1,0 +1,4 @@
+project_id = "iejoxemevitxamtfjvti"
+
+[functions.ward-bard-chat]
+verify_jwt = false

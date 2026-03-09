@@ -1,12 +1,9 @@
 import { motion } from 'framer-motion';
 import { WardBardLogo } from './WardBardLogo';
-import { specialties, type Specialty } from '@/lib/specialties';
 import type { ChatSession } from '@/hooks/use-chat';
 import { Plus, X } from 'lucide-react';
 
 interface ChatSidebarProps {
-  activeSpecialty: Specialty;
-  onSpecialtyChange: (s: Specialty) => void;
   sessions: ChatSession[];
   currentSessionId: string | null;
   onSelectSession: (id: string) => void;
@@ -15,8 +12,7 @@ interface ChatSidebarProps {
 }
 
 export function ChatSidebar({
-  activeSpecialty, onSpecialtyChange, sessions, currentSessionId,
-  onSelectSession, onNewChat, onClose,
+  sessions, currentSessionId, onSelectSession, onNewChat, onClose,
 }: ChatSidebarProps) {
   return (
     <div className="h-full flex flex-col bg-card/80 backdrop-blur-xl border-r border-border">
@@ -28,27 +24,6 @@ export function ChatSidebar({
             <X size={18} />
           </button>
         )}
-      </div>
-
-      {/* Specialty Tabs */}
-      <div className="p-3">
-        <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2 px-1">Specialty</p>
-        <div className="flex flex-wrap gap-1.5">
-          {specialties.map(s => (
-            <button
-              key={s.id}
-              onClick={() => onSpecialtyChange(s.id)}
-              className={`text-xs px-2.5 py-1.5 rounded-full transition-all duration-150 font-medium
-                ${activeSpecialty === s.id
-                  ? 'bg-primary text-primary-foreground'
-                  : 'bg-secondary text-muted-foreground hover:text-foreground'
-                }`}
-            >
-              <span className="mr-1">{s.icon}</span>
-              {s.label}
-            </button>
-          ))}
-        </div>
       </div>
 
       {/* Recent Chats */}

@@ -6,7 +6,7 @@ import { ChatSidebar } from '@/components/ChatSidebar';
 import { ChatMessageBubble } from '@/components/ChatMessageBubble';
 import { ChatInput } from '@/components/ChatInput';
 import { WardBardLogo } from '@/components/WardBardLogo';
-import { suggestedQueries, type Specialty } from '@/lib/specialties';
+import { suggestedQueries } from '@/lib/specialties';
 import { useChat } from '@/hooks/use-chat';
 import { useIsMobile } from '@/hooks/use-mobile';
 
@@ -17,14 +17,9 @@ export default function Chat() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const chat = useChat();
-  const { currentSession, sendMessage, isLoading, activeSpecialty, setActiveSpecialty } = chat;
+  const { currentSession, sendMessage, isLoading } = chat;
 
   const initialQuery = searchParams.get('q') || '';
-  const initialSpecialty = searchParams.get('s') as Specialty | null;
-
-  useEffect(() => {
-    if (initialSpecialty) setActiveSpecialty(initialSpecialty);
-  }, []);
 
   useEffect(() => {
     if (initialQuery && !currentSession) {
@@ -36,11 +31,6 @@ export default function Chat() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [currentSession?.messages]);
-
-  const handleSuggestedQuery = (text: string, specialty: Specialty) => {
-    setActiveSpecialty(specialty);
-    sendMessage(text);
-  };
 
   const messages = currentSession?.messages || [];
   const isEmpty = messages.length === 0;
@@ -58,8 +48,6 @@ export default function Chat() {
             transition={{ duration: 0.2, ease: 'easeOut' }}
           >
             <ChatSidebar
-              activeSpecialty={activeSpecialty}
-              onSpecialtyChange={(s) => { setActiveSpecialty(s); if (isMobile) setSidebarOpen(false); }}
               sessions={chat.sessions}
               currentSessionId={chat.currentSessionId}
               onSelectSession={(id) => { chat.setCurrentSessionId(id); if (isMobile) setSidebarOpen(false); }}
@@ -85,6 +73,13 @@ export default function Chat() {
           {!sidebarOpen && <WardBardLogo size="sm" />}
         </div>
 
+        {/* Disclaimer banner */}
+        <div className="px-4 py-2 bg-primary/5 border-b border-primary/10 text-center">
+          <p className="text-xs text-muted-foreground">
+            📚 <span className="font-medium text-foreground/80">Educational use only</span> — Ward Bard is not a substitute for professional medical advice, diagnosis, or treatment.
+          </p>
+        </div>
+
         {/* Messages area */}
         <div className="flex-1 overflow-y-auto px-4 py-6">
           {isEmpty ? (
@@ -95,7 +90,7 @@ export default function Chat() {
                 {suggestedQueries.map((sq, i) => (
                   <motion.button
                     key={i}
-                    onClick={() => handleSuggestedQuery(sq.text, sq.specialty)}
+                    onClick={() => sendMessage(sq.text)}
                     className="glass-card px-4 py-3 text-left text-sm text-muted-foreground hover:text-foreground transition-all duration-150 hover:border-primary/30"
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -132,12 +127,7 @@ export default function Chat() {
         </div>
 
         {/* Input */}
-        <ChatInput
-          onSend={sendMessage}
-          isLoading={isLoading}
-          activeSpecialty={activeSpecialty}
-          onSpecialtyClick={() => setSidebarOpen(true)}
-        />
+        <ChatInput onSend={sendMessage} isLoading={isLoading} />
       </div>
     </div>
   );

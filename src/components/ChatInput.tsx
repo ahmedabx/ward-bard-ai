@@ -1,20 +1,16 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Send } from 'lucide-react';
-import { specialties, type Specialty } from '@/lib/specialties';
 
 interface ChatInputProps {
   onSend: (message: string) => void;
   isLoading: boolean;
-  activeSpecialty: Specialty;
-  onSpecialtyClick?: () => void;
   initialValue?: string;
 }
 
-export function ChatInput({ onSend, isLoading, activeSpecialty, onSpecialtyClick, initialValue }: ChatInputProps) {
+export function ChatInput({ onSend, isLoading, initialValue }: ChatInputProps) {
   const [value, setValue] = useState(initialValue || '');
   const inputRef = useRef<HTMLTextAreaElement>(null);
-  const spec = specialties.find(s => s.id === activeSpecialty);
 
   useEffect(() => {
     if (initialValue) setValue(initialValue);
@@ -38,14 +34,6 @@ export function ChatInput({ onSend, isLoading, activeSpecialty, onSpecialtyClick
   return (
     <div className="p-3 md:p-4">
       <div className="glass-input flex items-end gap-2 p-2 pl-4 max-w-3xl mx-auto">
-        {spec && (
-          <button
-            onClick={onSpecialtyClick}
-            className="flex-shrink-0 text-xs px-2 py-1 rounded-full bg-primary/15 text-primary font-medium mb-1.5 transition-all duration-150 hover:bg-primary/25"
-          >
-            {spec.icon} {spec.label}
-          </button>
-        )}
         <textarea
           ref={inputRef}
           value={value}
@@ -64,6 +52,9 @@ export function ChatInput({ onSend, isLoading, activeSpecialty, onSpecialtyClick
           <Send size={16} />
         </motion.button>
       </div>
+      <p className="text-[10px] text-muted-foreground/50 text-center mt-2">
+        ⚠️ For educational purposes only. Not a substitute for professional medical advice.
+      </p>
     </div>
   );
 }

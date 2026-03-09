@@ -6,35 +6,19 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const specialtyReferences: Record<string, string> = {
-  medicine:
-    "Prioritize references from: Harrison's Principles of Internal Medicine, Oxford Handbook of Clinical Medicine, UpToDate, NEJM, The Lancet.",
-  surgery:
-    "Prioritize references from: Bailey & Love's Short Practice of Surgery, Schwartz's Principles of Surgery, Washington Manual of Surgery, BMJ, JACS.",
-  psychiatry:
-    "Prioritize references from: DSM-5-TR, Kaplan & Sadock's Comprehensive Textbook of Psychiatry, Oxford Textbook of Psychiatry, World Psychiatry.",
-  gynae:
-    "Prioritize references from: Williams Obstetrics, RCOG Guidelines, ACOG Practice Bulletins, BJOG, WHO Reproductive Health Guidelines.",
-  ophthalmology:
-    "Prioritize references from: Kanski's Clinical Ophthalmology, AAO Preferred Practice Patterns, Survey of Ophthalmology.",
-};
-
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { messages, specialty = "all" } = await req.json();
+    const { messages } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    const specialtyContext =
-      specialty !== "all" && specialtyReferences[specialty]
-        ? `\n${specialtyReferences[specialty]}`
-        : "";
-
     const systemPrompt = `You are Ward Bard, a clinical decision-support assistant for medical students and residents in low- and middle-income countries.
+
+IMPORTANT DISCLAIMER: You are for EDUCATIONAL PURPOSES ONLY. You are NOT a substitute for professional medical advice, diagnosis, or treatment. Always advise users to consult qualified healthcare providers for clinical decisions.
 
 Rules:
 1. Answer ONLY clinical or medical education questions. For anything else, respond: "Ward Bard is for clinical queries only. Ask me something medical."
@@ -57,7 +41,7 @@ Rules:
 3. References: cite 2–3 real, specific sources. Format: Textbook name + edition + chapter, OR Journal + year + volume + pages, OR Guideline name + issuing body + year. NEVER fabricate a reference.
 4. Depth: final-year medical student or PGY-1 resident level.
 5. Be concise but complete. Bullet points over paragraphs where possible.
-6. Active specialty filter: [${specialty.toUpperCase()}].${specialtyContext}`;
+6. End every response with a brief reminder: "⚠️ For educational purposes only. Always consult a qualified healthcare provider."`;
 
     const response = await fetch(
       "https://ai.gateway.lovable.dev/v1/chat/completions",

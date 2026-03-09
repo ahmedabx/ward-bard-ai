@@ -1,23 +1,12 @@
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { WardBardLogo } from '@/components/WardBardLogo';
-import { ArrowLeft, Search, Trash2 } from 'lucide-react';
-import { specialties, type Specialty } from '@/lib/specialties';
+import { ArrowLeft, Search } from 'lucide-react';
 import { useState } from 'react';
-import type { SavedNote } from '@/hooks/use-chat';
 
-interface SavedNotesPageProps {
-  notes: SavedNote[];
-  onRemove: (id: string) => void;
-}
-
-// This will be used as a routed component receiving props via context
 export default function SavedNotesPage() {
   const navigate = useNavigate();
-  // In this session-based approach, notes would come from parent context
-  // For now, showing the UI structure
   const [search, setSearch] = useState('');
-  const [filterSpecialty, setFilterSpecialty] = useState<Specialty>('all');
 
   return (
     <div className="min-h-screen bg-background">
@@ -30,9 +19,9 @@ export default function SavedNotesPage() {
       </header>
 
       <div className="max-w-4xl mx-auto px-4 py-6">
-        {/* Filters */}
-        <div className="flex flex-col sm:flex-row gap-3 mb-6">
-          <div className="flex-1 relative">
+        {/* Search */}
+        <div className="mb-6">
+          <div className="relative max-w-md">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <input
               value={search}
@@ -40,18 +29,6 @@ export default function SavedNotesPage() {
               placeholder="Search notes..."
               className="w-full bg-card border border-border rounded-lg pl-9 pr-4 py-2 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-primary transition-all duration-150"
             />
-          </div>
-          <div className="flex gap-1.5">
-            {specialties.map(s => (
-              <button
-                key={s.id}
-                onClick={() => setFilterSpecialty(s.id)}
-                className={`text-xs px-2.5 py-1.5 rounded-full transition-all duration-150 font-medium
-                  ${filterSpecialty === s.id ? 'bg-primary text-primary-foreground' : 'bg-secondary text-muted-foreground hover:text-foreground'}`}
-              >
-                {s.icon}
-              </button>
-            ))}
           </div>
         </div>
 

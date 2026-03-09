@@ -1,5 +1,4 @@
 import { useState, useCallback, useRef } from 'react';
-import type { Specialty } from '@/lib/specialties';
 import { supabase } from '@/integrations/supabase/client';
 
 export interface ChatMessage {
@@ -12,7 +11,6 @@ export interface ChatMessage {
 export interface ChatSession {
   id: string;
   title: string;
-  specialty: Specialty;
   messages: ChatMessage[];
   createdAt: Date;
 }
@@ -21,7 +19,6 @@ export interface SavedNote {
   id: string;
   question: string;
   answer: string;
-  specialty: Specialty;
   savedAt: Date;
 }
 
@@ -31,26 +28,10 @@ const uid = () => `${Date.now()}_${++counter}`;
 export function useChat() {
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
-  const [activeSpecialty, setActiveSpecialty] = useState<Specialty>('all');
   const [savedNotes, setSavedNotes] = useState<SavedNote[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const abortRef = useRef<AbortController | null>(null);
 
   const currentSession = sessions.find(s => s.id === currentSessionId);
-
-  const createSession = useCallback(() => {
-    const id = uid();
-    const session: ChatSession = {
-      id,
-      title: 'New Chat',
-      specialty: activeSpecialty,
-      messages: [],
-      createdAt: new Date(),
-    };
-    setSessions(prev => [session, ...prev]);
-    setCurrentSessionId(id);
-    return id;
-  }, [activeSpecialty]);
 
   const sendMessage = useCallback(async (content: string) => {
     let sessionId = currentSessionId;
@@ -59,7 +40,6 @@ export function useChat() {
       const session: ChatSession = {
         id: sessionId,
         title: content.slice(0, 50),
-        specialty: activeSpecialty,
         messages: [],
         createdAt: new Date(),
       };
@@ -79,14 +59,12 @@ export function useChat() {
 
     setIsLoading(true);
 
-    // Add empty assistant message
     setSessions(prev => prev.map(s => {
       if (s.id !== sessionId) return s;
       return { ...s, messages: [...s.messages, { id: assistantMsgId, role: 'assistant' as const, content: '', timestamp: new Date() }] };
     }));
 
     try {
-      // Get all messages for context
       const currentMessages = sessions.find(s => s.id === sessionId)?.messages || [];
       const allMessages = [...currentMessages, userMsg].map(m => ({ role: m.role, content: m.content }));
 
@@ -96,7 +74,7 @@ export function useChat() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
         },
-        body: JSON.stringify({ messages: allMessages, specialty: activeSpecialty }),
+        body: JSON.stringify({ messages: allMessages }),
       });
 
       if (!resp.ok || !resp.body) {
@@ -162,17 +140,16 @@ export function useChat() {
     } finally {
       setIsLoading(false);
     }
-  }, [currentSessionId, activeSpecialty, sessions]);
+  }, [currentSessionId, sessions]);
 
   const saveNote = useCallback((question: string, answer: string) => {
     setSavedNotes(prev => [{
       id: uid(),
       question,
       answer,
-      specialty: activeSpecialty,
       savedAt: new Date(),
     }, ...prev]);
-  }, [activeSpecialty]);
+  }, []);
 
   const removeNote = useCallback((id: string) => {
     setSavedNotes(prev => prev.filter(n => n.id !== id));
@@ -186,8 +163,6 @@ export function useChat() {
     sessions,
     currentSession,
     currentSessionId,
-    activeSpecialty,
-    setActiveSpecialty,
     setCurrentSessionId,
     sendMessage,
     isLoading,
@@ -195,6 +170,5 @@ export function useChat() {
     saveNote,
     removeNote,
     startNewChat,
-    createSession,
   };
 }

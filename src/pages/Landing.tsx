@@ -1,19 +1,10 @@
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { WardBardLogo } from '@/components/WardBardLogo';
-import { specialties, exampleQueriesBySpecialty, type Specialty } from '@/lib/specialties';
-import { useState, useEffect } from 'react';
-
-const specialtyCards = specialties.filter(s => s.id !== 'all') as { id: Exclude<Specialty, 'all'>; label: string; icon: string; color: string }[];
+import { exampleQueries } from '@/lib/specialties';
 
 export default function Landing() {
   const navigate = useNavigate();
-  const [activeCard, setActiveCard] = useState(0);
-
-  useEffect(() => {
-    const t = setInterval(() => setActiveCard(i => (i + 1) % specialtyCards.length), 3000);
-    return () => clearInterval(t);
-  }, []);
 
   return (
     <div className="min-h-screen bg-background overflow-hidden relative">
@@ -74,40 +65,35 @@ export default function Landing() {
         </motion.div>
       </section>
 
-      {/* Specialty Cards */}
-      <section className="relative z-10 max-w-5xl mx-auto px-4 pb-20">
+      {/* Example Queries */}
+      <section className="relative z-10 max-w-3xl mx-auto px-4 pb-20">
         <h2 className="font-heading text-2xl font-bold text-foreground text-center mb-10">
-          Explore by Specialty
+          Example Questions
         </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {specialtyCards.map((spec, i) => (
-            <motion.div
-              key={spec.id}
-              className={`glass-card p-5 cursor-pointer transition-all duration-150 ${activeCard === i ? 'glow-teal ring-1 ring-primary/30' : ''}`}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {exampleQueries.map((q, i) => (
+            <motion.button
+              key={i}
+              className="glass-card p-4 text-left text-sm text-muted-foreground hover:text-foreground transition-all duration-150"
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ delay: i * 0.08, duration: 0.3 }}
+              transition={{ delay: i * 0.05, duration: 0.3 }}
               whileHover={{ y: -4 }}
-              onClick={() => setActiveCard(i)}
+              onClick={() => navigate(`/chat?q=${encodeURIComponent(q)}`)}
             >
-              <div className="flex items-center gap-2 mb-3">
-                <span className="text-2xl">{spec.icon}</span>
-                <span className={`font-heading font-semibold text-${spec.color}`}>{spec.label}</span>
-              </div>
-              <ul className="space-y-1.5">
-                {exampleQueriesBySpecialty[spec.id].map((q, j) => (
-                  <li
-                    key={j}
-                    className="text-sm text-muted-foreground cursor-pointer hover:text-foreground transition-colors duration-150"
-                    onClick={(e) => { e.stopPropagation(); navigate(`/chat?q=${encodeURIComponent(q)}&s=${spec.id}`); }}
-                  >
-                    "{q}"
-                  </li>
-                ))}
-              </ul>
-            </motion.div>
+              "{q}"
+            </motion.button>
           ))}
+        </div>
+      </section>
+
+      {/* Disclaimer */}
+      <section className="relative z-10 max-w-2xl mx-auto px-4 pb-12">
+        <div className="glass-card p-5 text-center border border-primary/10">
+          <p className="text-sm text-muted-foreground">
+            📚 <span className="font-medium text-foreground/80">For educational purposes only.</span> Ward Bard is not a substitute for professional medical advice, diagnosis, or treatment. Always consult a qualified healthcare provider. We are not responsible for any clinical decisions made based on this tool.
+          </p>
         </div>
       </section>
 

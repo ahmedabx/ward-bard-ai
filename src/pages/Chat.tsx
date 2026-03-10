@@ -28,8 +28,13 @@ export default function Chat() {
     }
   }, [initialQuery]);
 
+  // Auto-scroll only for user messages (not AI responses)
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    const msgs = currentSession?.messages || [];
+    const lastMsg = msgs[msgs.length - 1];
+    if (lastMsg?.role === 'user') {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
   }, [currentSession?.messages]);
 
   const messages = currentSession?.messages || [];

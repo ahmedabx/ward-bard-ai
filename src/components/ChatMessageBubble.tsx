@@ -48,12 +48,12 @@ export function ChatMessageBubble({ message, onSave, previousUserMessage }: Chat
   return (
     <motion.div
       className="flex justify-start mb-4"
-      initial={{ opacity: 0, y: 8 }}
+      initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.2 }}
+      transition={{ duration: 0.35, ease: [0.25, 0.46, 0.45, 0.94] }}
     >
       <div className="max-w-[90%] md:max-w-[80%]">
-        <div className="glass-card p-5 md:p-6 border border-primary/10 relative group">
+        <div className="glass-card p-5 md:p-6 border border-primary/10 relative group transition-all duration-300">
           <div className="ward-bard-response prose prose-invert max-w-none text-[0.9rem] leading-[1.8] font-['Inter',sans-serif]">
             <ReactMarkdown
               components={{

@@ -122,3 +122,28 @@
   from { opacity: 0; transform: translateY(12px); }
   to { opacity: 1; transform: translateY(0); }
 }
+
+/* Smooth streaming text */
+.ward-bard-response {
+  animation: contentReveal 0.3s ease-out;
+}
+
+.ward-bard-response p,
+.ward-bard-response li,
+.ward-bard-response h1,
+.ward-bard-response h2,
+.ward-bard-response h3,
+.ward-bard-response blockquote,
+.ward-bard-response pre {
+  animation: textFadeIn 0.4s ease-out both;
+}
+
+@keyframes textFadeIn {
+  from { opacity: 0.4; filter: blur(1px); transform: translateY(2px); }
+  to { opacity: 1; filter: blur(0); transform: translateY(0); }
+}
+
+@keyframes contentReveal {
+  from { opacity: 0.6; }
+  to { opacity: 1; }
+}

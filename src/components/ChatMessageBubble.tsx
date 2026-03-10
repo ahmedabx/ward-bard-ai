@@ -53,9 +53,28 @@ export function ChatMessageBubble({ message, onSave, previousUserMessage }: Chat
       transition={{ duration: 0.2 }}
     >
       <div className="max-w-[90%] md:max-w-[80%]">
-        <div className="glass-card p-4 border border-primary/10 relative group">
-          <div className="prose prose-sm prose-invert max-w-none text-sm leading-relaxed">
-            <ReactMarkdown>{message.content}</ReactMarkdown>
+        <div className="glass-card p-5 md:p-6 border border-primary/10 relative group">
+          <div className="ward-bard-response prose prose-invert max-w-none text-[0.9rem] leading-[1.8] font-['Inter',sans-serif]">
+            <ReactMarkdown
+              components={{
+                h1: ({ children }) => <h1 className="text-lg font-semibold font-['Plus_Jakarta_Sans',sans-serif] text-foreground mt-0 mb-3">{children}</h1>,
+                h2: ({ children }) => <h2 className="text-base font-semibold font-['Plus_Jakarta_Sans',sans-serif] text-foreground mt-5 mb-2">{children}</h2>,
+                h3: ({ children }) => <h3 className="text-sm font-semibold font-['Plus_Jakarta_Sans',sans-serif] text-foreground mt-4 mb-2">{children}</h3>,
+                p: ({ children }) => <p className="text-muted-foreground mb-3 last:mb-0">{children}</p>,
+                ul: ({ children }) => <ul className="space-y-1.5 mb-3 pl-1">{children}</ul>,
+                ol: ({ children }) => <ol className="space-y-1.5 mb-3 pl-1 list-decimal list-inside">{children}</ol>,
+                li: ({ children }) => <li className="text-muted-foreground leading-relaxed flex gap-2"><span className="text-primary mt-0.5 shrink-0">•</span><span>{children}</span></li>,
+                strong: ({ children }) => <strong className="text-foreground font-semibold">{children}</strong>,
+                em: ({ children }) => <em className="text-primary/80">{children}</em>,
+                blockquote: ({ children }) => <blockquote className="border-l-2 border-primary/40 pl-4 my-3 text-muted-foreground/80 italic">{children}</blockquote>,
+                code: ({ children, className }) => {
+                  const isBlock = className?.includes('language-');
+                  if (isBlock) return <code className={`block bg-card/50 rounded-lg p-3 my-3 text-xs font-mono overflow-x-auto ${className}`}>{children}</code>;
+                  return <code className="bg-primary/10 text-primary px-1.5 py-0.5 rounded text-xs font-mono">{children}</code>;
+                },
+                hr: () => <hr className="border-border/30 my-4" />,
+              }}
+            >{message.content}</ReactMarkdown>
           </div>
 
           {/* Warning */}

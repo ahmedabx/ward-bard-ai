@@ -6,6 +6,7 @@ import { ChatSidebar } from '@/components/ChatSidebar';
 import { ChatMessageBubble } from '@/components/ChatMessageBubble';
 import { ChatInput } from '@/components/ChatInput';
 import { WardBardLogo } from '@/components/WardBardLogo';
+import { TabBar } from '@/components/TabBar';
 import { suggestedQueries } from '@/lib/specialties';
 import { useChat } from '@/hooks/use-chat';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -77,6 +78,9 @@ export default function Chat() {
           </button>
           {!sidebarOpen && <WardBardLogo size="sm" />}
         </div>
+
+        {/* Tabs */}
+        <TabBar />
 
         {/* Disclaimer banner */}
         <div className="px-4 py-2 bg-primary/5 border-b border-primary/10 text-center">

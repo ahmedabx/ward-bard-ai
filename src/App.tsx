@@ -7,6 +7,9 @@ import Landing from "./pages/Landing";
 import Chat from "./pages/Chat";
 import About from "./pages/About";
 import SavedNotes from "./pages/SavedNotes";
+import Literature from "./pages/Literature";
+import Calculators from "./pages/Calculators";
+import Daily from "./pages/Daily";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -22,6 +25,9 @@ const App = () => (
           <Route path="/chat" element={<Chat />} />
           <Route path="/about" element={<About />} />
           <Route path="/saved" element={<SavedNotes />} />
+          <Route path="/literature" element={<Literature />} />
+          <Route path="/calculators" element={<Calculators />} />
+          <Route path="/daily" element={<Daily />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

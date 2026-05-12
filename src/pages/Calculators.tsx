@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import { ChevronDown, ChevronUp, Globe, ExternalLink } from 'lucide-react';
 import { AppShell } from '@/components/AppShell';
 import { calculators, Calculator } from '@/lib/calculators';
 
@@ -65,6 +65,8 @@ function CalcForm({ calc }: { calc: Calculator }) {
   const [interpretation, setInterpretation] = useState<string>('');
   const [aiText, setAiText] = useState<string>('');
   const [aiState, setAiState] = useState<'idle' | 'loading' | 'error' | 'done'>('idle');
+  const [usedWebSearch, setUsedWebSearch] = useState(false);
+  const [webSources, setWebSources] = useState<Array<{ url: string; title?: string; published?: string | null }>>([]);
 
   const allSet = calc.fields.every((f) => values[f.id] !== undefined);
 
@@ -75,6 +77,8 @@ function CalcForm({ calc }: { calc: Calculator }) {
     setInterpretation(interp);
     setAiState('loading');
     setAiText('');
+    setUsedWebSearch(false);
+    setWebSources([]);
 
     const components: Record<string, string> = {};
     calc.fields.forEach((f) => {
@@ -95,6 +99,8 @@ function CalcForm({ calc }: { calc: Calculator }) {
       }
       const data = await res.json();
       setAiText(data.interpretation || '');
+      setUsedWebSearch(!!data.usedWebSearch);
+      setWebSources(Array.isArray(data.webSources) ? data.webSources : []);
       setAiState('done');
     } catch {
       setAiState('error');
@@ -140,7 +146,14 @@ function CalcForm({ calc }: { calc: Calculator }) {
           </div>
 
           <div className="glass-card p-4 border border-primary/10">
-            <p className="text-xs uppercase tracking-wider text-muted-foreground mb-2">Clinical interpretation</p>
+            <div className="flex items-center justify-between gap-2 mb-2 flex-wrap">
+              <p className="text-xs uppercase tracking-wider text-muted-foreground">Clinical interpretation</p>
+              {usedWebSearch && aiState === 'done' && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/10 border border-primary/30 text-[10px] font-medium text-primary uppercase tracking-wider">
+                  <Globe size={10} /> Live Sources
+                </span>
+              )}
+            </div>
             {aiState === 'loading' && (
               <p className="text-sm text-muted-foreground">Generating clinical interpretation...</p>
             )}
@@ -158,6 +171,31 @@ function CalcForm({ calc }: { calc: Calculator }) {
                     h3: ({ children }) => <h3 className="text-sm font-semibold text-foreground mt-3 mb-1">{children}</h3>,
                   }}
                 >{aiText}</ReactMarkdown>
+              </div>
+            )}
+            {aiState === 'done' && webSources.length > 0 && (
+              <div className="mt-3 pt-3 border-t border-border/40">
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1.5">
+                  References — Live web sources
+                </p>
+                <ul className="space-y-1">
+                  {webSources.map((w) => (
+                    <li key={w.url} className="text-xs">
+                      <a
+                        href={w.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-start gap-1.5 text-primary hover:underline break-all"
+                      >
+                        <ExternalLink size={11} className="mt-0.5 shrink-0" />
+                        <span>
+                          {w.title || w.url}
+                          {w.published ? <span className="text-muted-foreground ml-1">· {w.published}</span> : null}
+                        </span>
+                      </a>
+                    </li>
+                  ))}
+                </ul>
               </div>
             )}
           </div>

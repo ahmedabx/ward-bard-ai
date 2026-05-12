@@ -173,6 +173,31 @@ function CalcForm({ calc }: { calc: Calculator }) {
                 >{aiText}</ReactMarkdown>
               </div>
             )}
+            {aiState === 'done' && webSources.length > 0 && (
+              <div className="mt-3 pt-3 border-t border-border/40">
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1.5">
+                  References — Live web sources
+                </p>
+                <ul className="space-y-1">
+                  {webSources.map((w) => (
+                    <li key={w.url} className="text-xs">
+                      <a
+                        href={w.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-start gap-1.5 text-primary hover:underline break-all"
+                      >
+                        <ExternalLink size={11} className="mt-0.5 shrink-0" />
+                        <span>
+                          {w.title || w.url}
+                          {w.published ? <span className="text-muted-foreground ml-1">· {w.published}</span> : null}
+                        </span>
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
         </div>
       )}

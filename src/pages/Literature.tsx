@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
-import { ChevronDown, ChevronUp, Search, AlertTriangle } from 'lucide-react';
+import { ChevronDown, ChevronUp, Search, AlertTriangle, Globe, ExternalLink } from 'lucide-react';
 import { AppShell } from '@/components/AppShell';
 
 interface Source {
@@ -13,6 +13,12 @@ interface Source {
   abstractText: string;
 }
 
+interface WebSource {
+  url: string;
+  title?: string;
+  published?: string | null;
+}
+
 type Status = 'idle' | 'searching' | 'synthesizing' | 'done' | 'error';
 
 export default function Literature() {
@@ -22,6 +28,8 @@ export default function Literature() {
   const [sources, setSources] = useState<Source[]>([]);
   const [synthesis, setSynthesis] = useState<string | null>(null);
   const [sourcesOpen, setSourcesOpen] = useState(false);
+  const [usedWebSearch, setUsedWebSearch] = useState(false);
+  const [webSources, setWebSources] = useState<WebSource[]>([]);
 
   const handleSearch = async () => {
     if (!query.trim()) return;
@@ -54,6 +62,8 @@ export default function Literature() {
       }
       setSources(data.sources || []);
       setSynthesis(data.synthesis || null);
+      setUsedWebSearch(!!data.usedWebSearch);
+      setWebSources(Array.isArray(data.webSources) ? data.webSources : []);
       setStatus('done');
     } catch {
       setStatus('error');
@@ -115,9 +125,16 @@ export default function Literature() {
               {/* Synthesis */}
               {synthesis ? (
                 <div className="glass-card p-5 md:p-6 border border-primary/10">
-                  <h2 className="font-heading text-base font-semibold text-foreground mb-3">
-                    Evidence Synthesis
-                  </h2>
+                  <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
+                    <h2 className="font-heading text-base font-semibold text-foreground">
+                      Evidence Synthesis
+                    </h2>
+                    {usedWebSearch && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/10 border border-primary/30 text-[10px] font-medium text-primary uppercase tracking-wider">
+                        <Globe size={10} /> Live Sources
+                      </span>
+                    )}
+                  </div>
                   <div className="ward-bard-response prose prose-invert max-w-none text-[0.9rem] leading-[1.8]">
                     <ReactMarkdown
                       components={{

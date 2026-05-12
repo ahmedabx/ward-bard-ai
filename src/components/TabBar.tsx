@@ -1,8 +1,9 @@
 import { NavLink } from 'react-router-dom';
-import { MessageSquare, Calculator, CalendarDays } from 'lucide-react';
+import { MessageSquare, Calculator, CalendarDays, Stethoscope } from 'lucide-react';
 
 const tabs = [
   { to: '/chat', label: 'Cases', icon: MessageSquare },
+  { to: '/pimp-me', label: 'Pimp Me', icon: Stethoscope },
   { to: '/calculators', label: 'Calculators', icon: Calculator },
   { to: '/daily', label: 'Daily', icon: CalendarDays },
 ];

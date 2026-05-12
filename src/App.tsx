@@ -10,6 +10,7 @@ import SavedNotes from "./pages/SavedNotes";
 
 import Calculators from "./pages/Calculators";
 import Daily from "./pages/Daily";
+import PimpMe from "./pages/PimpMe";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -28,6 +29,7 @@ const App = () => (
           
           <Route path="/calculators" element={<Calculators />} />
           <Route path="/daily" element={<Daily />} />
+          <Route path="/pimp-me" element={<PimpMe />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

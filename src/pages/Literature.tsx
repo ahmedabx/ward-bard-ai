@@ -152,6 +152,34 @@ export default function Literature() {
                       {renderSynthesis(synthesis)}
                     </ReactMarkdown>
                   </div>
+
+                  {webSources.length > 0 && (
+                    <div className="mt-4 pt-4 border-t border-border/40">
+                      <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-2">
+                        References — Live web sources
+                      </p>
+                      <ul className="space-y-1.5">
+                        {webSources.map((w) => (
+                          <li key={w.url} className="text-xs">
+                            <a
+                              href={w.url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="inline-flex items-start gap-1.5 text-primary hover:underline break-all"
+                            >
+                              <ExternalLink size={11} className="mt-0.5 shrink-0" />
+                              <span>
+                                {w.title || w.url}
+                                {w.published ? (
+                                  <span className="text-muted-foreground ml-1">· {w.published}</span>
+                                ) : null}
+                              </span>
+                            </a>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                 </div>
               ) : sources.length > 0 ? (
                 <div className="glass-card p-5 border-amber-500/30">

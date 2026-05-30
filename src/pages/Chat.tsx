@@ -7,9 +7,15 @@ import { ChatMessageBubble } from '@/components/ChatMessageBubble';
 import { ChatInput } from '@/components/ChatInput';
 import { WardBardLogo } from '@/components/WardBardLogo';
 import { TabBar } from '@/components/TabBar';
-import { suggestedQueries } from '@/lib/specialties';
 import { useChat } from '@/hooks/use-chat';
 import { useIsMobile } from '@/hooks/use-mobile';
+
+const SUGGESTIONS = [
+  { category: 'Pharmacology', text: 'First-line Rx for community-acquired pneumonia?' },
+  { category: 'Scoring', text: 'Bishop score interpretation' },
+  { category: 'Differential', text: 'Acute red eye differentials' },
+  { category: 'Obstetrics', text: 'Stages of labour — when to intervene?' },
+];
 
 export default function Chat() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -82,31 +88,28 @@ export default function Chat() {
         {/* Tabs */}
         <TabBar />
 
-        {/* Disclaimer banner */}
-        <div className="px-4 py-2 bg-primary/5 border-b border-primary/10 text-center">
-          <p className="text-xs text-muted-foreground">
-            📚 <span className="font-medium text-foreground/80">Educational use only</span> — Ward Bard is not a substitute for professional medical advice, diagnosis, or treatment.
-          </p>
-        </div>
-
         {/* Messages area */}
         <div className="flex-1 overflow-y-auto px-4 py-6">
           {isEmpty ? (
-            <div className="h-full flex flex-col items-center justify-center">
+            <div className="h-full flex flex-col items-center justify-center max-w-2xl mx-auto">
               <WardBardLogo size="lg" showText />
-              <p className="text-muted-foreground text-sm mt-6 mb-8">Ask a clinical question to get started</p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-w-lg">
-                {suggestedQueries.map((sq, i) => (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-12 w-full">
+                {SUGGESTIONS.map((sq, i) => (
                   <motion.button
                     key={i}
                     onClick={() => sendMessage(sq.text)}
-                    className="glass-card px-4 py-3 text-left text-sm text-muted-foreground hover:text-foreground transition-all duration-150 hover:border-primary/30"
+                    className="text-left p-4 rounded-xl bg-card/40 border border-white/[0.06] hover:border-primary/30 hover:bg-primary/[0.04] transition-colors duration-150"
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: i * 0.05, duration: 0.2 }}
-                    whileHover={{ y: -2 }}
                   >
-                    "{sq.text}"
+                    <p
+                      className="text-primary font-semibold mb-1.5"
+                      style={{ fontSize: '9.5px', letterSpacing: '0.09em', textTransform: 'uppercase' }}
+                    >
+                      {sq.category}
+                    </p>
+                    <p className="text-sm text-foreground/90 leading-snug">{sq.text}</p>
                   </motion.button>
                 ))}
               </div>

@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Send } from 'lucide-react';
+import { ArrowUp, MessageSquare } from 'lucide-react';
 
 interface ChatInputProps {
   onSend: (message: string) => void;
@@ -33,7 +33,8 @@ export function ChatInput({ onSend, isLoading, initialValue }: ChatInputProps) {
 
   return (
     <div className="p-3 md:p-4">
-      <div className="glass-input flex items-end gap-2 p-2 pl-4 max-w-3xl mx-auto">
+      <div className="max-w-3xl mx-auto flex items-center gap-2 px-3 py-2 rounded-2xl bg-card/60 border border-white/[0.06]">
+        <MessageSquare size={16} className="text-muted-foreground flex-shrink-0" />
         <textarea
           ref={inputRef}
           value={value}
@@ -46,15 +47,13 @@ export function ChatInput({ onSend, isLoading, initialValue }: ChatInputProps) {
         <motion.button
           onClick={handleSend}
           disabled={!value.trim() || isLoading}
-          className="flex-shrink-0 p-2 rounded-full bg-primary text-primary-foreground disabled:opacity-30 transition-all duration-150"
+          className="flex-shrink-0 p-1.5 rounded-lg bg-primary text-primary-foreground disabled:opacity-30 transition-all duration-150"
           whileTap={{ scale: 0.9 }}
+          aria-label="Send"
         >
-          <Send size={16} />
+          <ArrowUp size={16} strokeWidth={2.5} />
         </motion.button>
       </div>
-      <p className="text-[10px] text-muted-foreground/50 text-center mt-2">
-        ⚠️ For educational purposes only. Not a substitute for professional medical advice.
-      </p>
     </div>
   );
 }

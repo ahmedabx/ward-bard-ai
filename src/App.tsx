@@ -9,7 +9,7 @@ import About from "./pages/About";
 import SavedNotes from "./pages/SavedNotes";
 
 import Calculators from "./pages/Calculators";
-import Daily from "./pages/Daily";
+import MyPatient from "./pages/MyPatient";
 import PimpMe from "./pages/PimpMe";
 import NotFound from "./pages/NotFound";
 
@@ -26,9 +26,9 @@ const App = () => (
           <Route path="/chat" element={<Chat />} />
           <Route path="/about" element={<About />} />
           <Route path="/saved" element={<SavedNotes />} />
-          
+
           <Route path="/calculators" element={<Calculators />} />
-          <Route path="/daily" element={<Daily />} />
+          <Route path="/my-patient" element={<MyPatient />} />
           <Route path="/pimp-me" element={<PimpMe />} />
           <Route path="*" element={<NotFound />} />
         </Routes>

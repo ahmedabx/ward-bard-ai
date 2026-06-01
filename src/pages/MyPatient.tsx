@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Loader2, RotateCcw, CheckCircle2, XCircle, ArrowRight } from 'lucide-react';
 import { AppShell } from '@/components/AppShell';
+import { supabase } from '@/integrations/supabase/client';
 
 // ---------- Types ----------
 interface PatientCase {
@@ -29,31 +30,14 @@ const STEPS: { key: string; label: string; question: string }[] = [
   { key: 'management',     label: 'Management',     question: 'What is your first-line management?' },
 ];
 
-// ---------- Groq client ----------
-const GROQ_KEY = (import.meta.env.VITE_GROQ_API_KEY as string | undefined) || '';
-const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
-const GROQ_MODEL = 'llama-3.3-70b-versatile';
-
+// ---------- Groq via edge function ----------
 async function groq(system: string, user: string, temperature = 0.8): Promise<string> {
-  if (!GROQ_KEY) throw new Error('VITE_GROQ_API_KEY is not set.');
-  const resp = await fetch(GROQ_URL, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${GROQ_KEY}`,
-    },
-    body: JSON.stringify({
-      model: GROQ_MODEL,
-      temperature,
-      messages: [
-        { role: 'system', content: system },
-        { role: 'user', content: user },
-      ],
-    }),
+  const { data, error } = await supabase.functions.invoke('groq-patient', {
+    body: { system, user, temperature },
   });
-  if (!resp.ok) throw new Error(`Groq error ${resp.status}`);
-  const data = await resp.json();
-  return data.choices?.[0]?.message?.content ?? '';
+  if (error) throw new Error(error.message || 'Groq request failed');
+  if (data?.error) throw new Error(data.error);
+  return (data?.content as string) ?? '';
 }
 
 function extractJson<T>(text: string): T {
@@ -176,11 +160,6 @@ export default function MyPatient() {
     <AppShell>
       <div className="flex-1 overflow-y-auto px-4 py-6">
         <div className="max-w-2xl mx-auto">
-          {!GROQ_KEY && (
-            <div className="mb-4 p-3 rounded-lg border border-amber-500/30 bg-amber-500/5 text-xs text-amber-200/90">
-              <code>VITE_GROQ_API_KEY</code> is not set. Add it in your <code>.env</code> to enable case generation.
-            </div>
-          )}
 
           {error && (
             <div className="mb-4 p-3 rounded-lg border border-destructive/30 bg-destructive/10 text-xs text-destructive flex items-center justify-between">

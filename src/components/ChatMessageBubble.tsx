@@ -3,6 +3,7 @@ import { Copy, Bookmark, ThumbsUp, ThumbsDown, Check } from 'lucide-react';
 import { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import type { ChatMessage } from '@/hooks/use-chat';
+import { PubMedEvidence } from '@/components/PubMedEvidence';
 
 interface ChatMessageBubbleProps {
   message: ChatMessage;
@@ -111,6 +112,9 @@ export function ChatMessageBubble({ message, onSave, previousUserMessage }: Chat
             </div>
           )}
         </div>
+        {previousUserMessage && message.content.length > 10 && (
+          <PubMedEvidence query={previousUserMessage} />
+        )}
       </div>
     </motion.div>
   );

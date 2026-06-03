@@ -116,9 +116,7 @@ export function ChatMessageBubble({ message, onSave, previousUserMessage }: Chat
             </div>
           )}
         </div>
-        {previousUserMessage && message.content.length > 10 && (
-          <PubMedEvidence query={previousUserMessage} />
-        )}
+        </div>
       </div>
     </motion.div>
   );

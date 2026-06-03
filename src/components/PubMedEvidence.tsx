@@ -26,8 +26,8 @@ function cleanQuery(raw: string): string {
 }
 
 async function searchPubMed(query: string): Promise<PubMedResult[]> {
-  const term = encodeURIComponent(cleanQuery(query));
-  const searchUrl = `https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&term=${term}&retmax=3&sort=relevance&retmode=json`;
+  const term = encodeURIComponent(cleanQuery(query) + ' guidelines');
+  const searchUrl = `https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&term=${term}&retmax=3&sort=date&datetype=pdat&mindate=2022/01/01&maxdate=2026/12/31&retmode=json`;
   const searchResp = await fetch(searchUrl);
   if (!searchResp.ok) return [];
   const searchData = await searchResp.json();

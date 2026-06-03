@@ -116,7 +116,6 @@ export function ChatMessageBubble({ message, onSave, previousUserMessage }: Chat
             </div>
           )}
         </div>
-        </div>
       </div>
     </motion.div>
   );

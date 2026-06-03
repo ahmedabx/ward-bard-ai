@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
-import { BookOpen, ChevronDown, Loader2 } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 interface PubMedResult {
   pmid: string;
@@ -38,7 +37,6 @@ async function fetchIds(term: string, withDate: boolean): Promise<string[]> {
 
 async function searchPubMed(query: string): Promise<PubMedResult[]> {
   const cleaned = cleanQuery(query);
-  // Try progressively broader queries until we get results.
   const attempts: Array<[string, boolean]> = [
     [`${cleaned} guidelines`, true],
     [`${cleaned} guideline`, false],
@@ -84,7 +82,6 @@ async function searchPubMed(query: string): Promise<PubMedResult[]> {
 export function PubMedEvidence({ query }: { query: string }) {
   const [loading, setLoading] = useState(true);
   const [results, setResults] = useState<PubMedResult[]>([]);
-  const [open, setOpen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -96,66 +93,57 @@ export function PubMedEvidence({ query }: { query: string }) {
     return () => { cancelled = true; };
   }, [query]);
 
-  if (!loading && results.length === 0) return null;
+  if (loading) {
+    return (
+      <div className="mt-5">
+        <h2 className="text-base font-semibold font-['Plus_Jakarta_Sans',sans-serif] text-foreground mb-2">
+          Latest Evidence
+        </h2>
+        <div className="space-y-1.5">
+          <div className="h-3 w-2/3 rounded bg-primary/10 animate-pulse" />
+          <div className="h-3 w-1/2 rounded bg-primary/10 animate-pulse" />
+        </div>
+      </div>
+    );
+  }
+
+  if (results.length === 0) return null;
 
   return (
-    <div className="mt-2">
-      <button
-        onClick={() => setOpen((o) => !o)}
-        disabled={loading}
-        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-primary/40 text-primary hover:bg-primary/10 transition-colors duration-150 disabled:opacity-70"
-        style={{ fontSize: '11px' }}
-      >
-        {loading ? <Loader2 size={11} className="animate-spin" /> : <BookOpen size={11} />}
-        <span>
-          {loading ? 'Evidence' : `Evidence · ${results.length}`}
+    <motion.div
+      initial={{ opacity: 0, y: 4 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.2 }}
+      className="mt-5"
+    >
+      <h2 className="text-base font-semibold font-['Plus_Jakarta_Sans',sans-serif] text-foreground mb-2">
+        Latest Evidence
+        <span className="ml-2 text-[10px] font-normal text-muted-foreground/70 uppercase tracking-wider">
+          PubMed
         </span>
-        {!loading && (
-          <ChevronDown
-            size={11}
-            className={`transition-transform duration-150 ${open ? 'rotate-180' : ''}`}
-          />
-        )}
-      </button>
-
-      <AnimatePresence initial={false}>
-        {open && !loading && results.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.15 }}
-            className="overflow-hidden"
-          >
-            <ul className="mt-2 space-y-1.5">
-              {results.map((r) => (
-                <li
-                  key={r.pmid}
-                  className="p-2.5 rounded-lg"
-                  style={{
-                    background: 'rgba(255,255,255,0.03)',
-                    border: '0.5px solid rgba(255,255,255,0.08)',
-                  }}
-                >
-                  <a
-                    href={r.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="block text-[13px] leading-snug text-foreground hover:text-primary transition-colors duration-150 line-clamp-2"
-                  >
-                    {r.title}
-                  </a>
-                  <p className="mt-1 text-[11px] text-muted-foreground">
-                    {r.authorLine}
-                    {r.journal && <> · <span className="italic">{r.journal}</span></>}
-                    {r.year && <> · {r.year}</>}
-                  </p>
-                </li>
-              ))}
-            </ul>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
+      </h2>
+      <ul className="space-y-2 pl-1">
+        {results.map((r) => (
+          <li key={r.pmid} className="text-muted-foreground leading-relaxed flex gap-2">
+            <span className="text-primary mt-0.5 shrink-0">•</span>
+            <span className="flex-1">
+              <a
+                href={r.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[0.9rem] text-foreground hover:text-primary transition-colors duration-150 underline-offset-2 hover:underline"
+              >
+                {r.title}
+              </a>
+              <span className="block text-[11px] text-muted-foreground/80 mt-0.5">
+                {r.authorLine}
+                {r.journal && <> · <span className="italic">{r.journal}</span></>}
+                {r.year && <> · {r.year}</>}
+              </span>
+            </span>
+          </li>
+        ))}
+      </ul>
+    </motion.div>
   );
 }

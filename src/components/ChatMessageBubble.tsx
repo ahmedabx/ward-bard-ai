@@ -78,6 +78,10 @@ export function ChatMessageBubble({ message, onSave, previousUserMessage }: Chat
             >{message.content}</ReactMarkdown>
           </div>
 
+          {previousUserMessage && message.content.length > 10 && (
+            <PubMedEvidence query={previousUserMessage} />
+          )}
+
           {/* Warning */}
           {message.content.length > 10 && (
             <p className="mt-3 text-[10px] text-muted-foreground/60 italic">
@@ -112,9 +116,6 @@ export function ChatMessageBubble({ message, onSave, previousUserMessage }: Chat
             </div>
           )}
         </div>
-        {previousUserMessage && message.content.length > 10 && (
-          <PubMedEvidence query={previousUserMessage} />
-        )}
       </div>
     </motion.div>
   );

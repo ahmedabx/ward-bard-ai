@@ -25,13 +25,32 @@ function cleanQuery(raw: string): string {
   return q.length < 3 ? raw.trim() : q;
 }
 
+async function fetchIds(term: string, withDate: boolean): Promise<string[]> {
+  const dateParams = withDate
+    ? `&datetype=pdat&mindate=2022/01/01&maxdate=2026/12/31`
+    : '';
+  const url = `https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&term=${encodeURIComponent(term)}&retmax=3&sort=pub+date${dateParams}&retmode=json`;
+  const resp = await fetch(url);
+  if (!resp.ok) return [];
+  const data = await resp.json();
+  return data?.esearchresult?.idlist ?? [];
+}
+
 async function searchPubMed(query: string): Promise<PubMedResult[]> {
-  const term = encodeURIComponent(cleanQuery(query) + ' guidelines');
-  const searchUrl = `https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&term=${term}&retmax=3&sort=date&datetype=pdat&mindate=2022/01/01&maxdate=2026/12/31&retmode=json`;
-  const searchResp = await fetch(searchUrl);
-  if (!searchResp.ok) return [];
-  const searchData = await searchResp.json();
-  const ids: string[] = searchData?.esearchresult?.idlist ?? [];
+  const cleaned = cleanQuery(query);
+  // Try progressively broader queries until we get results.
+  const attempts: Array<[string, boolean]> = [
+    [`${cleaned} guidelines`, true],
+    [`${cleaned} guideline`, false],
+    [`${cleaned} review`, true],
+    [cleaned, true],
+    [cleaned, false],
+  ];
+  let ids: string[] = [];
+  for (const [term, withDate] of attempts) {
+    ids = await fetchIds(term, withDate);
+    if (ids.length) break;
+  }
   if (!ids.length) return [];
 
   const sumUrl = `https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=pubmed&id=${ids.join(',')}&retmode=json`;

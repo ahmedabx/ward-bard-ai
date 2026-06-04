@@ -6,9 +6,10 @@ interface ChatInputProps {
   onSend: (message: string) => void;
   isLoading: boolean;
   initialValue?: string;
+  autoFocus?: boolean;
 }
 
-export function ChatInput({ onSend, isLoading, initialValue }: ChatInputProps) {
+export function ChatInput({ onSend, isLoading, initialValue, autoFocus }: ChatInputProps) {
   const [value, setValue] = useState(initialValue || '');
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -37,6 +38,7 @@ export function ChatInput({ onSend, isLoading, initialValue }: ChatInputProps) {
         <MessageSquare size={16} className="text-muted-foreground flex-shrink-0" />
         <textarea
           ref={inputRef}
+          autoFocus={autoFocus}
           value={value}
           onChange={e => setValue(e.target.value)}
           onKeyDown={handleKeyDown}

@@ -12,7 +12,39 @@ serve(async (req) => {
   }
 
   try {
-    const { messages } = await req.json();
+    const { messages: rawMessages } = await req.json();
+
+    // ---- Bound + sanitize client messages to prevent token abuse ----
+    const MAX_TURNS = 20;
+    const MAX_CONTENT = 4000;
+    if (!Array.isArray(rawMessages) || rawMessages.length === 0) {
+      return new Response(JSON.stringify({ error: "Invalid messages" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    if (rawMessages.length > MAX_TURNS) {
+      return new Response(JSON.stringify({ error: "Too many messages" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const messages: { role: "user" | "assistant"; content: string }[] = [];
+    for (const m of rawMessages) {
+      if (!m || typeof m !== "object") continue;
+      const role = (m as any).role;
+      const content = (m as any).content;
+      if ((role !== "user" && role !== "assistant") || typeof content !== "string") {
+        return new Response(JSON.stringify({ error: "Invalid message shape" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      if (content.length > MAX_CONTENT) {
+        return new Response(JSON.stringify({ error: "Message too long" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      messages.push({ role, content });
+    }
+
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
@@ -79,7 +111,7 @@ Rules:
   } catch (e) {
     console.error("chat error:", e);
     return new Response(
-      JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }),
+      JSON.stringify({ error: "Server error" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

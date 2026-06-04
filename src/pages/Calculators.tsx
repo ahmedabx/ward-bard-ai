@@ -2,17 +2,16 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
 import { ChevronDown, ChevronUp, Globe, ExternalLink } from 'lucide-react';
-import { AppShell } from '@/components/AppShell';
+import { AppLayout } from '@/components/AppLayout';
 import { calculators, Calculator } from '@/lib/calculators';
 
 export default function Calculators() {
   const [openId, setOpenId] = useState<string | null>(null);
 
   return (
-    <AppShell>
-      <div className="flex-1 overflow-y-auto px-4 py-6">
+    <AppLayout>
+      <div className="px-4 py-6">
         <div className="max-w-3xl mx-auto">
-          <h1 className="font-heading text-2xl md:text-3xl font-bold text-foreground mb-2">Calculators</h1>
           <p className="text-sm text-muted-foreground mb-6">
             Validated clinical scores with AI-assisted interpretation.
           </p>
@@ -24,7 +23,7 @@ export default function Calculators() {
           </div>
         </div>
       </div>
-    </AppShell>
+    </AppLayout>
   );
 }
 

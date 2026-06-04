@@ -38,6 +38,7 @@ export function ChatInput({ onSend, isLoading, initialValue, autoFocus }: ChatIn
         <MessageSquare size={16} className="text-muted-foreground flex-shrink-0" />
         <textarea
           ref={inputRef}
+          autoFocus={autoFocus}
           value={value}
           onChange={e => setValue(e.target.value)}
           onKeyDown={handleKeyDown}

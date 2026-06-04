@@ -1,18 +1,9 @@
 import { useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { motion } from 'framer-motion';
 import { AppLayout } from '@/components/AppLayout';
 import { ChatMessageBubble } from '@/components/ChatMessageBubble';
 import { ChatInput } from '@/components/ChatInput';
-import { WardBardLogo } from '@/components/WardBardLogo';
 import { useChatContext } from '@/contexts/ChatContext';
-
-const SUGGESTIONS = [
-  { category: 'Pharmacology', text: 'First-line Rx for community-acquired pneumonia?' },
-  { category: 'Scoring', text: 'Bishop score interpretation' },
-  { category: 'Differential', text: 'Acute red eye differentials' },
-  { category: 'Obstetrics', text: 'Stages of labour — when to intervene?' },
-];
 
 export default function Chat() {
   const [searchParams, setSearchParams] = useSearchParams();

@@ -30,12 +30,10 @@ const STEPS: { key: string; label: string; question: string }[] = [
   { key: 'management',     label: 'Management',     question: 'What is your first-line management?' },
 ];
 
-// ---------- Groq via edge function ----------
-async function groq(system: string, user: string, temperature = 0.8): Promise<string> {
-  const { data, error } = await supabase.functions.invoke('groq-patient', {
-    body: { system, user, temperature },
-  });
-  if (error) throw new Error(error.message || 'Groq request failed');
+// ---------- Edge function bridge ----------
+async function callPatientFn(body: Record<string, unknown>): Promise<string> {
+  const { data, error } = await supabase.functions.invoke('groq-patient', { body });
+  if (error) throw new Error(error.message || 'Request failed');
   if (data?.error) throw new Error(data.error);
   return (data?.content as string) ?? '';
 }

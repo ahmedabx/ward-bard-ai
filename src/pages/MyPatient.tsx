@@ -76,10 +76,7 @@ export default function MyPatient() {
     setChosenOption(null);
     setFinished(false);
     try {
-      const sys =
-        'You are a clinical case generator. Generate a realistic but randomized patient case for medical student practice. Return ONLY valid JSON, no markdown, no explanation. Format: { "name": string, "age": number, "sex": string, "chief_complaint": string, "history": string, "specialty": string }';
-      const seed = Math.random().toString(36).slice(2, 8);
-      const raw = await groq(sys, `Generate a new patient case. Seed: ${seed}`, 1);
+      const raw = await callPatientFn({ action: 'new_case' });
       setPatient(extractJson<PatientCase>(raw));
     } catch (e: any) {
       setError(e?.message || 'Failed to generate case');
@@ -99,10 +96,12 @@ export default function MyPatient() {
     setCurrentOptions(null);
     try {
       const step = STEPS[idx];
-      const sys =
-        'You are a clinical educator. Given this patient case and the current step, generate exactly 4 multiple choice options. One must be correct or most appropriate, three must be plausible but suboptimal or incorrect. Return ONLY valid JSON: { "options": [{"text": string, "correct": boolean}] }. Shuffle the order so the correct answer is not always first.';
-      const userMsg = `CASE: ${JSON.stringify(patient)}\nSTEP: ${step.key}\nQUESTION: ${step.question}`;
-      const raw = await groq(sys, userMsg, 0.7);
+      const raw = await callPatientFn({
+        action: 'options',
+        patient,
+        stepKey: step.key,
+        stepQuestion: step.question,
+      });
       const parsed = extractJson<{ options: Option[] }>(raw);
       const opts = (parsed.options || []).slice(0, 4);
       setCurrentOptions(opts);
@@ -123,10 +122,14 @@ export default function MyPatient() {
     setChosenOption(choice);
     setLoadingFeedback(true);
     try {
-      const sys =
-        'You are a clinical educator giving brief, direct feedback to a medical student. In 2 sentences maximum: state whether their choice was correct or not, and explain why. Be clinical, not encouraging. No filler phrases.';
-      const userMsg = `CASE: ${JSON.stringify(patient)}\nSTEP: ${STEPS[stepIndex].key}\nQUESTION: ${STEPS[stepIndex].question}\nSTUDENT_CHOICE: ${choice.text}\nCORRECT: ${choice.correct}`;
-      const fb = await groq(sys, userMsg, 0.4);
+      const fb = await callPatientFn({
+        action: 'feedback',
+        patient,
+        stepKey: STEPS[stepIndex].key,
+        stepQuestion: STEPS[stepIndex].question,
+        choiceText: choice.text,
+        correct: choice.correct,
+      });
       setFeedback(fb.trim());
     } catch (e: any) {
       setFeedback('Could not load feedback.');

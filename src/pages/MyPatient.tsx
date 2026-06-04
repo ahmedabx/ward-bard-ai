@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Loader2, RotateCcw, CheckCircle2, XCircle, ArrowRight } from 'lucide-react';
-import { AppShell } from '@/components/AppShell';
+import { AppLayout } from '@/components/AppLayout';
 import { supabase } from '@/integrations/supabase/client';
 
 // ---------- Types ----------
@@ -157,8 +157,8 @@ export default function MyPatient() {
 
   // ---------- Render ----------
   return (
-    <AppShell>
-      <div className="flex-1 overflow-y-auto px-4 py-6">
+    <AppLayout>
+      <div className="px-4 py-6">
         <div className="max-w-2xl mx-auto">
 
           {error && (
@@ -195,7 +195,7 @@ export default function MyPatient() {
           )}
         </div>
       </div>
-    </AppShell>
+    </AppLayout>
   );
 }
 

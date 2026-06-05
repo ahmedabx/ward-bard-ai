@@ -1,205 +1,329 @@
-import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import ReactMarkdown from 'react-markdown';
-import { ChevronDown, ChevronUp, Globe, ExternalLink } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { Search, RotateCcw } from 'lucide-react';
 import { AppLayout } from '@/components/AppLayout';
-import { calculators, Calculator } from '@/lib/calculators';
+import {
+  calculators,
+  Calculator,
+  CalcResult,
+  SPECIALTIES,
+  Specialty,
+} from '@/lib/calculators';
+
+type Filter = 'All' | Specialty;
+const FILTERS: Filter[] = ['All', ...SPECIALTIES];
+
+const RISK_STYLE: Record<
+  CalcResult['risk'],
+  { bg: string; border: string; text: string; label: string }
+> = {
+  low:      { bg: 'rgba(30,185,140,0.10)',  border: 'rgba(30,185,140,0.35)',  text: '#1eb98c', label: 'Low' },
+  moderate: { bg: 'rgba(245,180,75,0.10)',  border: 'rgba(245,180,75,0.35)',  text: '#f5b44b', label: 'Moderate' },
+  high:     { bg: 'rgba(235,90,90,0.10)',   border: 'rgba(235,90,90,0.35)',   text: '#eb5a5a', label: 'High' },
+};
 
 export default function Calculators() {
-  const [openId, setOpenId] = useState<string | null>(null);
+  const [filter, setFilter] = useState<Filter>('All');
+  const [query, setQuery] = useState('');
+  const [activeId, setActiveId] = useState<string>(calculators[0].id);
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return calculators.filter((c) => {
+      if (filter !== 'All' && c.specialty !== filter) return false;
+      if (q && !`${c.name} ${c.specialty} ${c.description}`.toLowerCase().includes(q)) return false;
+      return true;
+    });
+  }, [filter, query]);
+
+  const active = calculators.find((c) => c.id === activeId) ?? filtered[0];
 
   return (
     <AppLayout>
-      <div className="px-4 py-6">
-        <div className="max-w-3xl mx-auto">
-          <p className="text-sm text-muted-foreground mb-6">
-            Validated clinical scores with AI-assisted interpretation.
-          </p>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {calculators.map((c) => (
-              <CalcCard key={c.id} calc={c} open={openId === c.id} onToggle={() => setOpenId(openId === c.id ? null : c.id)} />
-            ))}
+      <div className="h-full flex min-h-0">
+        {/* LEFT PANEL — search + filter + list */}
+        <div
+          className="w-[320px] flex-shrink-0 flex flex-col min-h-0"
+          style={{ borderRight: '0.5px solid rgba(255,255,255,0.06)', background: '#0a0d12' }}
+        >
+          <div className="p-3 flex-shrink-0 space-y-3">
+            <div className="relative">
+              <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-foreground/40" />
+              <input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search calculators…"
+                className="w-full bg-[#0f1117] text-foreground text-xs pl-8 pr-3 py-2 rounded-md outline-none focus:ring-1 focus:ring-[#1eb98c]/50"
+                style={{ border: '0.5px solid rgba(255,255,255,0.08)' }}
+              />
+            </div>
+            <div className="flex gap-1.5 overflow-x-auto no-scrollbar -mx-1 px-1 pb-1">
+              {FILTERS.map((f) => {
+                const on = filter === f;
+                return (
+                  <button
+                    key={f}
+                    onClick={() => setFilter(f)}
+                    className="whitespace-nowrap text-[10.5px] px-2.5 py-1 rounded-full transition-colors"
+                    style={{
+                      background: on ? 'rgba(30,185,140,0.14)' : 'transparent',
+                      color: on ? '#1eb98c' : 'rgba(255,255,255,0.55)',
+                      border: `0.5px solid ${on ? 'rgba(30,185,140,0.4)' : 'rgba(255,255,255,0.08)'}`,
+                    }}
+                  >
+                    {f}
+                  </button>
+                );
+              })}
+            </div>
           </div>
+
+          <div className="border-t" style={{ borderColor: 'rgba(255,255,255,0.06)' }} />
+
+          <div className="flex-1 overflow-y-auto p-2 space-y-1">
+            {filtered.length === 0 && (
+              <p className="text-xs text-muted-foreground px-2 py-3">No calculators match.</p>
+            )}
+            {filtered.map((c) => {
+              const on = c.id === active?.id;
+              return (
+                <button
+                  key={c.id}
+                  onClick={() => setActiveId(c.id)}
+                  className="w-full text-left px-3 py-2.5 rounded-md transition-colors"
+                  style={{
+                    background: on ? 'rgba(30,185,140,0.08)' : 'transparent',
+                    border: `0.5px solid ${on ? 'rgba(30,185,140,0.30)' : 'rgba(255,255,255,0.04)'}`,
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!on) (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.025)';
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!on) (e.currentTarget as HTMLElement).style.background = 'transparent';
+                  }}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0 flex-1">
+                      <p
+                        className="text-[12.5px] font-medium truncate"
+                        style={{ color: on ? '#1eb98c' : 'rgba(255,255,255,0.92)' }}
+                      >
+                        {c.name}
+                      </p>
+                      <p className="text-[10.5px] text-foreground/45 mt-0.5 line-clamp-2 leading-snug">
+                        {c.description}
+                      </p>
+                    </div>
+                    <span
+                      className="text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded shrink-0 mt-0.5"
+                      style={{
+                        background: 'rgba(255,255,255,0.04)',
+                        color: 'rgba(255,255,255,0.45)',
+                        border: '0.5px solid rgba(255,255,255,0.06)',
+                      }}
+                    >
+                      {c.specialty.split('/')[0].slice(0, 5)}
+                    </span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* RIGHT PANEL — active calculator */}
+        <div className="flex-1 overflow-y-auto min-w-0">
+          {active && <CalculatorPanel key={active.id} calc={active} />}
         </div>
       </div>
     </AppLayout>
   );
 }
 
-function CalcCard({ calc, open, onToggle }: { calc: Calculator; open: boolean; onToggle: () => void }) {
-  return (
-    <div className={`glass-card overflow-hidden ${open ? 'sm:col-span-2' : ''}`}>
-      <button onClick={onToggle} className="w-full text-left p-4 hover:bg-card/40 transition-colors">
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="font-heading font-semibold text-foreground">{calc.name}</h3>
-            <p className="text-xs text-muted-foreground mt-1">{calc.description}</p>
-          </div>
-          {open ? <ChevronUp size={16} className="shrink-0" /> : <ChevronDown size={16} className="shrink-0" />}
-        </div>
-      </button>
-      <AnimatePresence>
-        {open && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="overflow-hidden"
-          >
-            <div className="p-4 pt-0 border-t border-border/40">
-              <CalcForm calc={calc} />
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
-  );
-}
-
-function CalcForm({ calc }: { calc: Calculator }) {
+function CalculatorPanel({ calc }: { calc: Calculator }) {
   const [values, setValues] = useState<Record<string, number | undefined>>({});
-  const [score, setScore] = useState<number | null>(null);
-  const [interpretation, setInterpretation] = useState<string>('');
-  const [aiText, setAiText] = useState<string>('');
-  const [aiState, setAiState] = useState<'idle' | 'loading' | 'error' | 'done'>('idle');
-  const [usedWebSearch, setUsedWebSearch] = useState(false);
-  const [webSources, setWebSources] = useState<Array<{ url: string; title?: string; published?: string | null }>>([]);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [result, setResult] = useState<CalcResult | null>(null);
 
-  const allSet = calc.fields.every((f) => values[f.id] !== undefined);
-
-  const calculate = async () => {
-    const total = calc.fields.reduce((acc, f) => acc + (values[f.id] || 0), 0);
-    setScore(total);
-    const interp = calc.interpret(total);
-    setInterpretation(interp);
-    setAiState('loading');
-    setAiText('');
-    setUsedWebSearch(false);
-    setWebSources([]);
-
-    const components: Record<string, string> = {};
-    calc.fields.forEach((f) => {
-      const v = values[f.id];
-      const opt = f.options.find((o) => o.value === v);
-      components[f.label] = `${opt?.label ?? '—'} (${v})`;
-    });
-
-    try {
-      const res = await fetch('/api/interpret', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: calc.name, score: total, interpretation: interp, components }),
-      });
-      if (!res.ok) {
-        setAiState('error');
-        return;
-      }
-      const data = await res.json();
-      setAiText(data.interpretation || '');
-      setUsedWebSearch(!!data.usedWebSearch);
-      setWebSources(Array.isArray(data.webSources) ? data.webSources : []);
-      setAiState('done');
-    } catch {
-      setAiState('error');
-    }
+  const setField = (id: string, v: number | undefined) => {
+    setValues((prev) => ({ ...prev, [id]: v }));
+    if (errors[id]) setErrors((e) => { const n = { ...e }; delete n[id]; return n; });
   };
 
+  const reset = () => { setValues({}); setErrors({}); setResult(null); };
+
+  const calculate = () => {
+    const errs: Record<string, string> = {};
+    const payload: Record<string, number> = {};
+    for (const f of calc.fields) {
+      const v = values[f.id];
+      if (v === undefined || Number.isNaN(v)) {
+        errs[f.id] = 'Required';
+        continue;
+      }
+      if (f.type === 'number') {
+        if (f.min !== undefined && v < f.min) errs[f.id] = `Min ${f.min}`;
+        if (f.max !== undefined && v > f.max) errs[f.id] = `Max ${f.max}`;
+      }
+      payload[f.id] = v;
+    }
+    if (Object.keys(errs).length) { setErrors(errs); return; }
+    setErrors({});
+    setResult(calc.compute(payload));
+  };
+
+  // Group fields by section
+  const sections = useMemo(() => {
+    const groups: { name: string | null; fields: typeof calc.fields }[] = [];
+    for (const f of calc.fields) {
+      const key = f.section ?? null;
+      const last = groups[groups.length - 1];
+      if (last && last.name === key) last.fields.push(f);
+      else groups.push({ name: key, fields: [f] });
+    }
+    return groups;
+  }, [calc]);
+
   return (
-    <div className="pt-4 space-y-4">
-      <div className="space-y-3">
-        {calc.fields.map((f) => (
-          <div key={f.id}>
-            <label className="text-xs text-muted-foreground block mb-1.5">{f.label}</label>
-            <select
-              value={values[f.id] ?? ''}
-              onChange={(e) => setValues((v) => ({ ...v, [f.id]: Number(e.target.value) }))}
-              className="w-full bg-card border border-border rounded-lg px-3 py-2 text-sm text-foreground outline-none focus:ring-1 focus:ring-primary"
-            >
-              <option value="" disabled>Select...</option>
-              {f.options.map((o) => (
-                <option key={o.label} value={o.value}>
-                  {o.label}{f.type === 'select' ? ` (${o.value})` : ''}
-                </option>
-              ))}
-            </select>
+    <div className="max-w-2xl mx-auto px-6 py-6">
+      <div className="mb-5">
+        <div className="flex items-center gap-2 mb-1">
+          <span
+            className="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded"
+            style={{
+              background: 'rgba(30,185,140,0.10)',
+              color: '#1eb98c',
+              border: '0.5px solid rgba(30,185,140,0.3)',
+            }}
+          >
+            {calc.specialty}
+          </span>
+        </div>
+        <h2 className="font-serif-display text-2xl text-foreground">{calc.name}</h2>
+        <p className="text-sm text-foreground/55 mt-1">{calc.description}</p>
+      </div>
+
+      <div className="space-y-5">
+        {sections.map((g, gi) => (
+          <div key={gi} className="space-y-3">
+            {g.name && (
+              <p className="text-[10px] uppercase tracking-[0.12em] text-foreground/45 pt-1">
+                {g.name}
+              </p>
+            )}
+            {g.fields.map((f) => (
+              <FieldRow
+                key={f.id}
+                field={f}
+                value={values[f.id]}
+                error={errors[f.id]}
+                onChange={(v) => setField(f.id, v)}
+              />
+            ))}
           </div>
         ))}
       </div>
 
-      <button
-        onClick={calculate}
-        disabled={!allSet}
-        className="w-full px-5 py-2.5 bg-primary text-primary-foreground rounded-lg font-medium text-sm disabled:opacity-50 hover:opacity-90 active:scale-[0.98]"
-      >
-        Calculate
-      </button>
+      <div className="flex gap-2 mt-6">
+        <button
+          onClick={calculate}
+          className="px-5 py-2 rounded-md text-sm font-medium transition-colors"
+          style={{
+            background: '#1eb98c',
+            color: '#06231a',
+          }}
+        >
+          Calculate
+        </button>
+        <button
+          onClick={reset}
+          className="px-3 py-2 rounded-md text-xs flex items-center gap-1.5 text-foreground/60 hover:text-foreground transition-colors"
+          style={{ border: '0.5px solid rgba(255,255,255,0.10)' }}
+        >
+          <RotateCcw size={12} /> Reset
+        </button>
+      </div>
 
-      {score !== null && (
-        <div className="space-y-3">
-          <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 text-center">
-            <p className="text-xs text-muted-foreground uppercase tracking-wider">Score</p>
-            <p className="font-heading text-3xl font-bold text-primary mt-1">{score}</p>
-            <p className="text-sm text-foreground mt-1">{interpretation}</p>
-          </div>
+      {result && <ResultCard result={result} />}
+    </div>
+  );
+}
 
-          <div className="glass-card p-4 border border-primary/10">
-            <div className="flex items-center justify-between gap-2 mb-2 flex-wrap">
-              <p className="text-xs uppercase tracking-wider text-muted-foreground">Clinical interpretation</p>
-              {usedWebSearch && aiState === 'done' && (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/10 border border-primary/30 text-[10px] font-medium text-primary uppercase tracking-wider">
-                  <Globe size={10} /> Live Sources
-                </span>
-              )}
-            </div>
-            {aiState === 'loading' && (
-              <p className="text-sm text-muted-foreground">Generating clinical interpretation...</p>
-            )}
-            {aiState === 'error' && (
-              <p className="text-sm text-destructive">AI interpretation unavailable. The score and components above stand on their own.</p>
-            )}
-            {aiState === 'done' && (
-              <div className="ward-bard-response prose prose-invert max-w-none text-[0.9rem] leading-[1.7]">
-                <ReactMarkdown
-                  components={{
-                    p: ({ children }) => <p className="text-muted-foreground mb-2">{children}</p>,
-                    strong: ({ children }) => <strong className="text-foreground font-semibold">{children}</strong>,
-                    ul: ({ children }) => <ul className="space-y-1 mb-2 pl-4 list-disc">{children}</ul>,
-                    li: ({ children }) => <li className="text-muted-foreground">{children}</li>,
-                    h3: ({ children }) => <h3 className="text-sm font-semibold text-foreground mt-3 mb-1">{children}</h3>,
-                  }}
-                >{aiText}</ReactMarkdown>
-              </div>
-            )}
-            {aiState === 'done' && webSources.length > 0 && (
-              <div className="mt-3 pt-3 border-t border-border/40">
-                <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1.5">
-                  References — Live web sources
-                </p>
-                <ul className="space-y-1">
-                  {webSources.map((w) => (
-                    <li key={w.url} className="text-xs">
-                      <a
-                        href={w.url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex items-start gap-1.5 text-primary hover:underline break-all"
-                      >
-                        <ExternalLink size={11} className="mt-0.5 shrink-0" />
-                        <span>
-                          {w.title || w.url}
-                          {w.published ? <span className="text-muted-foreground ml-1">· {w.published}</span> : null}
-                        </span>
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </div>
+function FieldRow({
+  field, value, error, onChange,
+}: {
+  field: Calculator['fields'][number];
+  value: number | undefined;
+  error?: string;
+  onChange: (v: number | undefined) => void;
+}) {
+  return (
+    <div>
+      <div className="flex items-baseline justify-between mb-1">
+        <label className="text-xs text-foreground/70">{field.label}</label>
+        {error && <span className="text-[10px] text-[#eb5a5a]">{error}</span>}
+      </div>
+      {field.type === 'number' ? (
+        <div className="relative">
+          <input
+            type="number"
+            value={value ?? ''}
+            min={field.min}
+            max={field.max}
+            step={field.step ?? 1}
+            placeholder={field.placeholder}
+            onChange={(e) => {
+              const t = e.target.value;
+              onChange(t === '' ? undefined : Number(t));
+            }}
+            className="w-full bg-[#0a0d12] text-foreground text-sm px-3 py-2 rounded-md outline-none focus:ring-1 focus:ring-[#1eb98c]/50"
+            style={{ border: `0.5px solid ${error ? 'rgba(235,90,90,0.5)' : 'rgba(255,255,255,0.10)'}` }}
+          />
+          {field.unit && (
+            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] text-foreground/40">
+              {field.unit}
+            </span>
+          )}
         </div>
+      ) : (
+        <select
+          value={value ?? ''}
+          onChange={(e) => onChange(e.target.value === '' ? undefined : Number(e.target.value))}
+          className="w-full bg-[#0a0d12] text-foreground text-sm px-3 py-2 rounded-md outline-none focus:ring-1 focus:ring-[#1eb98c]/50"
+          style={{ border: `0.5px solid ${error ? 'rgba(235,90,90,0.5)' : 'rgba(255,255,255,0.10)'}` }}
+        >
+          <option value="" disabled>Select…</option>
+          {field.options?.map((o, i) => (
+            <option key={`${o.label}-${i}`} value={o.value}>{o.label}</option>
+          ))}
+        </select>
       )}
+    </div>
+  );
+}
+
+function ResultCard({ result }: { result: CalcResult }) {
+  const s = RISK_STYLE[result.risk];
+  return (
+    <div
+      className="mt-5 rounded-lg p-5"
+      style={{ background: s.bg, border: `0.5px solid ${s.border}` }}
+    >
+      <div className="flex items-center justify-between gap-4 flex-wrap">
+        <div>
+          <p className="text-[10px] uppercase tracking-[0.14em] text-foreground/50 mb-1">Score</p>
+          <p className="font-serif-display text-4xl" style={{ color: s.text }}>{result.score}</p>
+        </div>
+        <div className="text-right">
+          <span
+            className="inline-block text-[10px] uppercase tracking-wider px-2 py-1 rounded font-medium"
+            style={{ background: 'rgba(0,0,0,0.25)', color: s.text, border: `0.5px solid ${s.border}` }}
+          >
+            {s.label} risk
+          </span>
+          <p className="text-sm text-foreground/85 mt-2">{result.category}</p>
+        </div>
+      </div>
+      <p className="text-sm text-foreground/70 mt-3 leading-relaxed">{result.interpretation}</p>
     </div>
   );
 }

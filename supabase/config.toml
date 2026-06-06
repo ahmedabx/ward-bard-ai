@@ -2,3 +2,9 @@ project_id = "iejoxemevitxamtfjvti"
 
 [functions.ward-bard-chat]
 verify_jwt = false
+
+[functions.groq-patient]
+verify_jwt = false
+
+[functions.pubmed-search]
+verify_jwt = false

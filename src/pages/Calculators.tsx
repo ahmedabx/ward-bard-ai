@@ -16,10 +16,12 @@ const RISK_STYLE: Record<
   CalcResult['risk'],
   { bg: string; border: string; text: string; label: string }
 > = {
-  low:      { bg: 'rgba(30,185,140,0.10)',  border: 'rgba(30,185,140,0.35)',  text: '#1eb98c', label: 'Low' },
-  moderate: { bg: 'rgba(245,180,75,0.10)',  border: 'rgba(245,180,75,0.35)',  text: '#f5b44b', label: 'Moderate' },
-  high:     { bg: 'rgba(235,90,90,0.10)',   border: 'rgba(235,90,90,0.35)',   text: '#eb5a5a', label: 'High' },
+  low:      { bg: 'hsl(var(--primary) / 0.10)',  border: 'hsl(var(--primary) / 0.35)',  text: 'hsl(var(--primary))', label: 'Low' },
+  moderate: { bg: 'rgba(245,180,75,0.10)',  border: 'rgba(245,180,75,0.35)',  text: '#d99a2b', label: 'Moderate' },
+  high:     { bg: 'rgba(235,90,90,0.10)',   border: 'rgba(235,90,90,0.35)',   text: '#d94a4a', label: 'High' },
 };
+
+const HAIRLINE = '0.5px solid hsl(var(--hairline) / var(--hairline-alpha))';
 
 export default function Calculators() {
   const [filter, setFilter] = useState<Filter>('All');
@@ -43,7 +45,7 @@ export default function Calculators() {
         {/* LEFT PANEL — search + filter + list */}
         <div
           className="w-[320px] flex-shrink-0 flex flex-col min-h-0"
-          style={{ borderRight: '0.5px solid rgba(255,255,255,0.06)', background: '#0a0d12' }}
+          style={{ borderRight: HAIRLINE, background: 'hsl(var(--surface-sidebar))' }}
         >
           <div className="p-3 flex-shrink-0 space-y-3">
             <div className="relative">
@@ -52,8 +54,8 @@ export default function Calculators() {
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search calculators…"
-                className="w-full bg-[#0f1117] text-foreground text-xs pl-8 pr-3 py-2 rounded-md outline-none focus:ring-1 focus:ring-[#1eb98c]/50"
-                style={{ border: '0.5px solid rgba(255,255,255,0.08)' }}
+                className="w-full bg-background text-foreground text-xs pl-8 pr-3 py-2 rounded-md outline-none focus:ring-1 focus:ring-primary/50"
+                style={{ border: HAIRLINE }}
               />
             </div>
             <div className="flex gap-1.5 overflow-x-auto no-scrollbar -mx-1 px-1 pb-1">
@@ -65,9 +67,9 @@ export default function Calculators() {
                     onClick={() => setFilter(f)}
                     className="whitespace-nowrap text-[10.5px] px-2.5 py-1 rounded-full transition-colors"
                     style={{
-                      background: on ? 'rgba(30,185,140,0.14)' : 'transparent',
-                      color: on ? '#1eb98c' : 'rgba(255,255,255,0.55)',
-                      border: `0.5px solid ${on ? 'rgba(30,185,140,0.4)' : 'rgba(255,255,255,0.08)'}`,
+                      background: on ? 'hsl(var(--primary) / 0.14)' : 'transparent',
+                      color: on ? 'hsl(var(--primary))' : 'hsl(var(--muted-foreground))',
+                      border: `0.5px solid ${on ? 'hsl(var(--primary) / 0.4)' : 'hsl(var(--hairline) / var(--hairline-alpha))'}`,
                     }}
                   >
                     {f}
@@ -77,7 +79,7 @@ export default function Calculators() {
             </div>
           </div>
 
-          <div className="border-t" style={{ borderColor: 'rgba(255,255,255,0.06)' }} />
+          <div style={{ borderTop: HAIRLINE }} />
 
           <div className="flex-1 overflow-y-auto p-2 space-y-1">
             {filtered.length === 0 && (
@@ -91,11 +93,11 @@ export default function Calculators() {
                   onClick={() => setActiveId(c.id)}
                   className="w-full text-left px-3 py-2.5 rounded-md transition-colors"
                   style={{
-                    background: on ? 'rgba(30,185,140,0.08)' : 'transparent',
-                    border: `0.5px solid ${on ? 'rgba(30,185,140,0.30)' : 'rgba(255,255,255,0.04)'}`,
+                    background: on ? 'hsl(var(--primary) / 0.08)' : 'transparent',
+                    border: `0.5px solid ${on ? 'hsl(var(--primary) / 0.30)' : 'transparent'}`,
                   }}
                   onMouseEnter={(e) => {
-                    if (!on) (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.025)';
+                    if (!on) (e.currentTarget as HTMLElement).style.background = 'hsl(var(--foreground) / 0.04)';
                   }}
                   onMouseLeave={(e) => {
                     if (!on) (e.currentTarget as HTMLElement).style.background = 'transparent';
@@ -105,7 +107,7 @@ export default function Calculators() {
                     <div className="min-w-0 flex-1">
                       <p
                         className="text-[12.5px] font-medium truncate"
-                        style={{ color: on ? '#1eb98c' : 'rgba(255,255,255,0.92)' }}
+                        style={{ color: on ? 'hsl(var(--primary))' : 'hsl(var(--foreground))' }}
                       >
                         {c.name}
                       </p>
@@ -116,9 +118,9 @@ export default function Calculators() {
                     <span
                       className="text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded shrink-0 mt-0.5"
                       style={{
-                        background: 'rgba(255,255,255,0.04)',
-                        color: 'rgba(255,255,255,0.45)',
-                        border: '0.5px solid rgba(255,255,255,0.06)',
+                        background: 'hsl(var(--foreground) / 0.04)',
+                        color: 'hsl(var(--muted-foreground))',
+                        border: HAIRLINE,
                       }}
                     >
                       {c.specialty.split('/')[0].slice(0, 5)}
@@ -190,9 +192,9 @@ function CalculatorPanel({ calc }: { calc: Calculator }) {
           <span
             className="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded"
             style={{
-              background: 'rgba(30,185,140,0.10)',
-              color: '#1eb98c',
-              border: '0.5px solid rgba(30,185,140,0.3)',
+              background: 'hsl(var(--primary) / 0.10)',
+              color: 'hsl(var(--primary))',
+              border: '0.5px solid hsl(var(--primary) / 0.3)',
             }}
           >
             {calc.specialty}
@@ -226,18 +228,14 @@ function CalculatorPanel({ calc }: { calc: Calculator }) {
       <div className="flex gap-2 mt-6">
         <button
           onClick={calculate}
-          className="px-5 py-2 rounded-md text-sm font-medium transition-colors"
-          style={{
-            background: '#1eb98c',
-            color: '#06231a',
-          }}
+          className="px-5 py-2 rounded-md text-sm font-medium transition-colors bg-primary text-primary-foreground hover:bg-primary/90"
         >
           Calculate
         </button>
         <button
           onClick={reset}
           className="px-3 py-2 rounded-md text-xs flex items-center gap-1.5 text-foreground/60 hover:text-foreground transition-colors"
-          style={{ border: '0.5px solid rgba(255,255,255,0.10)' }}
+          style={{ border: HAIRLINE }}
         >
           <RotateCcw size={12} /> Reset
         </button>
@@ -260,7 +258,7 @@ function FieldRow({
     <div>
       <div className="flex items-baseline justify-between mb-1">
         <label className="text-xs text-foreground/70">{field.label}</label>
-        {error && <span className="text-[10px] text-[#eb5a5a]">{error}</span>}
+        {error && <span className="text-[10px] text-destructive">{error}</span>}
       </div>
       {field.type === 'number' ? (
         <div className="relative">
@@ -275,8 +273,8 @@ function FieldRow({
               const t = e.target.value;
               onChange(t === '' ? undefined : Number(t));
             }}
-            className="w-full bg-[#0a0d12] text-foreground text-sm px-3 py-2 rounded-md outline-none focus:ring-1 focus:ring-[#1eb98c]/50"
-            style={{ border: `0.5px solid ${error ? 'rgba(235,90,90,0.5)' : 'rgba(255,255,255,0.10)'}` }}
+            className="w-full bg-background text-foreground text-sm px-3 py-2 rounded-md outline-none focus:ring-1 focus:ring-primary/50"
+            style={{ border: `0.5px solid ${error ? 'hsl(var(--destructive) / 0.5)' : 'hsl(var(--border))'}` }}
           />
           {field.unit && (
             <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] text-foreground/40">
@@ -288,8 +286,8 @@ function FieldRow({
         <select
           value={value ?? ''}
           onChange={(e) => onChange(e.target.value === '' ? undefined : Number(e.target.value))}
-          className="w-full bg-[#0a0d12] text-foreground text-sm px-3 py-2 rounded-md outline-none focus:ring-1 focus:ring-[#1eb98c]/50"
-          style={{ border: `0.5px solid ${error ? 'rgba(235,90,90,0.5)' : 'rgba(255,255,255,0.10)'}` }}
+          className="w-full bg-background text-foreground text-sm px-3 py-2 rounded-md outline-none focus:ring-1 focus:ring-primary/50"
+          style={{ border: `0.5px solid ${error ? 'hsl(var(--destructive) / 0.5)' : 'hsl(var(--border))'}` }}
         >
           <option value="" disabled>Select…</option>
           {field.options?.map((o, i) => (
@@ -316,7 +314,7 @@ function ResultCard({ result }: { result: CalcResult }) {
         <div className="text-right">
           <span
             className="inline-block text-[10px] uppercase tracking-wider px-2 py-1 rounded font-medium"
-            style={{ background: 'rgba(0,0,0,0.25)', color: s.text, border: `0.5px solid ${s.border}` }}
+            style={{ background: 'hsl(var(--foreground) / 0.06)', color: s.text, border: `0.5px solid ${s.border}` }}
           >
             {s.label} risk
           </span>

@@ -5,36 +5,47 @@
 @tailwind utilities;
 
 @layer base {
+  /* Light theme (default) */
   :root {
-    --background: 220 21% 7%;        /* #0f1117 */
-    --foreground: 210 33% 96%;
+    --background: 0 0% 100%;
+    --foreground: 220 20% 12%;
 
-    --card: 220 20% 9%;
-    --card-foreground: 210 33% 96%;
+    --card: 210 20% 98%;
+    --card-foreground: 220 20% 12%;
 
-    --popover: 220 20% 9%;
-    --popover-foreground: 210 33% 96%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 20% 12%;
 
-    --primary: 160 72% 42%;          /* #1eb98c teal */
-    --primary-foreground: 220 21% 7%;
+    /* Brand teal #94c4ba */
+    --primary: 167 29% 67%;
+    --primary-foreground: 220 20% 12%;
 
-    --secondary: 220 15% 14%;
-    --secondary-foreground: 210 33% 96%;
+    --secondary: 210 16% 94%;
+    --secondary-foreground: 220 20% 12%;
 
-    --muted: 220 15% 16%;
-    --muted-foreground: 220 10% 60%;
+    --muted: 210 16% 94%;
+    --muted-foreground: 220 9% 42%;
 
-    --accent: 160 72% 42%;
-    --accent-foreground: 220 21% 7%;
+    --accent: 167 29% 67%;
+    --accent-foreground: 220 20% 12%;
 
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 210 33% 96%;
+    --destructive: 0 72% 50%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 220 15% 22%;
-    --input: 220 15% 22%;
-    --ring: 160 72% 42%;
+    --border: 220 13% 88%;
+    --input: 220 13% 88%;
+    --ring: 167 29% 60%;
 
     --radius: 0.75rem;
+
+    /* Three-surface app shell */
+    --surface-rail: 210 16% 93%;
+    --surface-sidebar: 210 20% 97%;
+    --surface-main: 0 0% 100%;
+
+    /* Hairline border (0.5px) */
+    --hairline: 220 13% 0%;
+    --hairline-alpha: 0.08;
 
     /* Specialty colors */
     --specialty-medicine: 217 91% 60%;
@@ -43,16 +54,65 @@
     --specialty-gynae: 330 86% 70%;
     --specialty-ophthalmology: 45 96% 56%;
 
+    --shadow-card: 0 4px 24px hsl(220 20% 50% / 0.08);
+
+    --sidebar-background: 210 20% 97%;
+    --sidebar-foreground: 220 20% 12%;
+    --sidebar-primary: 167 29% 67%;
+    --sidebar-primary-foreground: 220 20% 12%;
+    --sidebar-accent: 210 16% 92%;
+    --sidebar-accent-foreground: 220 20% 12%;
+    --sidebar-border: 220 13% 88%;
+    --sidebar-ring: 167 29% 60%;
+  }
+
+  /* Dark theme */
+  .dark {
+    --background: 220 21% 7%;
+    --foreground: 210 33% 96%;
+
+    --card: 220 20% 9%;
+    --card-foreground: 210 33% 96%;
+
+    --popover: 220 20% 9%;
+    --popover-foreground: 210 33% 96%;
+
+    --primary: 167 36% 67%;
+    --primary-foreground: 220 21% 7%;
+
+    --secondary: 220 15% 14%;
+    --secondary-foreground: 210 33% 96%;
+
+    --muted: 220 15% 16%;
+    --muted-foreground: 220 10% 60%;
+
+    --accent: 167 36% 67%;
+    --accent-foreground: 220 21% 7%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 210 33% 96%;
+
+    --border: 220 15% 22%;
+    --input: 220 15% 22%;
+    --ring: 167 36% 67%;
+
+    --surface-rail: 218 33% 5%;     /* #080b10 */
+    --surface-sidebar: 218 29% 5%;  /* #0a0d12 */
+    --surface-main: 220 21% 7%;     /* #0f1117 */
+
+    --hairline: 0 0% 100%;
+    --hairline-alpha: 0.06;
+
     --shadow-card: 0 4px 24px hsl(220 30% 3% / 0.4);
 
-    --sidebar-background: 218 29% 5%;  /* #0a0d12 */
+    --sidebar-background: 218 29% 5%;
     --sidebar-foreground: 210 33% 96%;
-    --sidebar-primary: 160 72% 42%;
+    --sidebar-primary: 167 36% 67%;
     --sidebar-primary-foreground: 220 21% 7%;
     --sidebar-accent: 220 15% 12%;
     --sidebar-accent-foreground: 210 33% 96%;
     --sidebar-border: 220 15% 14%;
-    --sidebar-ring: 160 72% 42%;
+    --sidebar-ring: 167 36% 67%;
   }
 }
 
@@ -85,7 +145,7 @@
   }
 
   .glow-teal {
-    box-shadow: 0 0 30px hsl(168 100% 39% / 0.2), 0 0 60px hsl(168 100% 39% / 0.1);
+    box-shadow: 0 0 30px hsl(var(--primary) / 0.2), 0 0 60px hsl(var(--primary) / 0.1);
   }
 
   .glow-pulse {
@@ -106,8 +166,8 @@
 }
 
 @keyframes glowPulse {
-  0%, 100% { box-shadow: 0 0 20px hsl(168 100% 39% / 0.2), 0 0 40px hsl(168 100% 39% / 0.1); }
-  50% { box-shadow: 0 0 30px hsl(168 100% 39% / 0.35), 0 0 60px hsl(168 100% 39% / 0.15); }
+  0%, 100% { box-shadow: 0 0 20px hsl(var(--primary) / 0.2), 0 0 40px hsl(var(--primary) / 0.1); }
+  50% { box-shadow: 0 0 30px hsl(var(--primary) / 0.35), 0 0 60px hsl(var(--primary) / 0.15); }
 }
 
 @keyframes float {

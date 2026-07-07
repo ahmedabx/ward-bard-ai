@@ -18,6 +18,8 @@ function isAllowedOrigin(origin: string | null): boolean {
   try {
     const u = new URL(origin);
     if (u.hostname.endsWith(".lovable.app")) return true;
+    if (u.hostname.endsWith(".lovableproject.com")) return true;
+    if (u.hostname.endsWith(".lovable.dev")) return true;
   } catch {
     /* ignore */
   }

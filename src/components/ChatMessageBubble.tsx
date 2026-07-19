@@ -82,10 +82,10 @@ export function ChatMessageBubble({ message, onSave, previousUserMessage }: Chat
             <PubMedEvidence query={previousUserMessage} />
           )}
 
-          {/* Warning */}
+          {/* Educational-use notice */}
           {message.content.length > 10 && (
-            <p className="mt-3 text-[10px] text-muted-foreground/60 italic">
-              ⚠️ Ward Bard is an educational tool. Not a substitute for expert clinical advice. We are not responsible for any malpractice.
+            <p className="mt-3 text-[10px] text-muted-foreground/70">
+              For medical education and exam preparation only. Not for real-world patient-care decisions.
             </p>
           )}
 

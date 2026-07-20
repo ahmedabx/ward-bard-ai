@@ -4,6 +4,7 @@ import { MessageSquare, User, Calculator, FileQuestion, LogOut, Settings } from 
 import type { User as SupaUser } from '@supabase/supabase-js';
 import { MedBardMark } from './MedBardLogo';
 import { useChatContext } from '@/contexts/ChatContext';
+import { useStudyMode } from '@/contexts/ModeContext';
 import { supabase } from '@/integrations/supabase/client';
 import {
   Tooltip,
@@ -49,6 +50,7 @@ export function AppLayout({ children, inputBar }: AppLayoutProps) {
   const ActiveIcon = active.Icon;
 
   const { sessions, currentSessionId, setCurrentSessionId, startNewChat } = useChatContext();
+  const { mode, setMode } = useStudyMode();
 
   const [user, setUser] = useState<SupaUser | null>(null);
   useEffect(() => {
@@ -208,17 +210,44 @@ export function AppLayout({ children, inputBar }: AppLayoutProps) {
               <ActiveIcon size={14} style={{ color: 'hsl(var(--muted-foreground))' }} />
               <span className="font-serif-display text-[15px] text-foreground">{active.label}</span>
             </div>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span className="text-[10.5px] text-muted-foreground cursor-default">
-                  For exam preparation and study
-                </span>
-              </TooltipTrigger>
-              <TooltipContent side="bottom" className="text-xs max-w-[260px]">
-                MedBard is intended for medical education and exam preparation. Not for real-world
-                patient-care decisions.
-              </TooltipContent>
-            </Tooltip>
+            <div className="flex items-center gap-3">
+              <div
+                className="flex items-center rounded-md p-0.5"
+                style={{ border: HAIRLINE, background: 'hsl(var(--surface-rail) / 0.5)' }}
+                role="tablist"
+                aria-label="Study mode"
+              >
+                {(['preclinical', 'clinical'] as const).map((m) => {
+                  const on = mode === m;
+                  return (
+                    <button
+                      key={m}
+                      role="tab"
+                      aria-selected={on}
+                      onClick={() => setMode(m)}
+                      className="px-2.5 h-6 rounded text-[11px] font-medium transition-colors"
+                      style={{
+                        background: on ? 'hsl(var(--primary) / 0.15)' : 'transparent',
+                        color: on ? 'hsl(var(--primary))' : 'hsl(var(--muted-foreground))',
+                      }}
+                    >
+                      {m === 'preclinical' ? 'Preclinical' : 'Clinical'}
+                    </button>
+                  );
+                })}
+              </div>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="text-[10.5px] text-muted-foreground cursor-default">
+                    For exam preparation and study
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="text-xs max-w-[260px]">
+                  MedBard is intended for medical education and exam preparation. Not for real-world
+                  patient-care decisions.
+                </TooltipContent>
+              </Tooltip>
+            </div>
           </div>
 
           <main className="flex-1 overflow-y-auto min-h-0">{children}</main>

@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Loader2, RotateCcw, CheckCircle2, XCircle, ArrowRight } from 'lucide-react';
 import { AppLayout } from '@/components/AppLayout';
 import { supabase } from '@/integrations/supabase/client';
+import { useStudyMode } from '@/contexts/ModeContext';
 
 // ---------- Types ----------
 interface PatientCase {
@@ -48,6 +49,7 @@ function extractJson<T>(text: string): T {
 
 // ---------- Page ----------
 export default function MyPatient() {
+  const { mode } = useStudyMode();
   const [patient, setPatient] = useState<PatientCase | null>(null);
   const [loadingCase, setLoadingCase] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -76,7 +78,7 @@ export default function MyPatient() {
     setChosenOption(null);
     setFinished(false);
     try {
-      const raw = await callPatientFn({ action: 'new_case' });
+      const raw = await callPatientFn({ action: 'new_case', mode });
       setPatient(extractJson<PatientCase>(raw));
     } catch (e: any) {
       setError(e?.message || 'Failed to generate case');

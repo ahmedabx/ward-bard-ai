@@ -4,6 +4,7 @@ import { AppLayout } from '@/components/AppLayout';
 import { ChatMessageBubble } from '@/components/ChatMessageBubble';
 import { ChatInput } from '@/components/ChatInput';
 import { useChatContext } from '@/contexts/ChatContext';
+import { useStudyMode } from '@/contexts/ModeContext';
 
 export default function Chat() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -11,12 +12,13 @@ export default function Chat() {
 
   const chat = useChatContext();
   const { currentSession, sendMessage, isLoading } = chat;
+  const { mode } = useStudyMode();
 
   const initialQuery = searchParams.get('q') || '';
 
   useEffect(() => {
     if (initialQuery && !currentSession) {
-      sendMessage(initialQuery);
+      sendMessage(initialQuery, mode);
       setSearchParams({});
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -33,7 +35,7 @@ export default function Chat() {
   const messages = currentSession?.messages || [];
 
   return (
-    <AppLayout inputBar={<ChatInput onSend={sendMessage} isLoading={isLoading} autoFocus />}>
+    <AppLayout inputBar={<ChatInput onSend={(t) => sendMessage(t, mode)} isLoading={isLoading} autoFocus />}>
       <div className="px-4 py-6">
         <div className="max-w-3xl mx-auto">
           {messages.map((msg, i) => (

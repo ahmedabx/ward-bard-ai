@@ -124,10 +124,13 @@ Deno.serve(async (req) => {
 
     if (action === "new_case") {
       const seed = Math.random().toString(36).slice(2, 8);
+      const rawMode = (body as Record<string, unknown>).mode;
+      const mode = rawMode === "preclinical" ? "preclinical" : "clinical";
+      const sys = mode === "preclinical" ? SYS_NEW_CASE_PRECLINICAL : SYS_NEW_CASE_CLINICAL;
       const content = await callGroq(
         apiKey,
-        SYS_NEW_CASE,
-        `Generate a new patient case. Seed: ${seed}`,
+        sys,
+        `Generate a new ${mode} patient case. Seed: ${seed}`,
         1,
       );
       return jsonResponse(req, { content });

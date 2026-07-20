@@ -8,3 +8,6 @@ verify_jwt = false
 
 [functions.pubmed-search]
 verify_jwt = false
+
+[functions.qbank-generator]
+verify_jwt = false

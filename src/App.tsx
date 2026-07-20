@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ChatProvider } from "./contexts/ChatContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
+import { ModeProvider } from "./contexts/ModeContext";
 import { AuthGate } from "./components/AuthGate";
 import Chat from "./pages/Chat";
 import Login from "./pages/Login";
@@ -26,6 +27,7 @@ const Protected = ({ children }: { children: React.ReactNode }) => (
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider>
+      <ModeProvider>
       <TooltipProvider>
         <Toaster />
         <Sonner />
@@ -43,6 +45,7 @@ const App = () => (
           </Routes>
         </BrowserRouter>
       </TooltipProvider>
+      </ModeProvider>
     </ThemeProvider>
   </QueryClientProvider>
 );

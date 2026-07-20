@@ -34,6 +34,9 @@ serve(async (req) => {
 
     const body = await req.json().catch(() => null);
     const rawMessages = (body as { messages?: unknown })?.messages;
+    const rawMode = (body as { mode?: unknown })?.mode;
+    const mode: 'preclinical' | 'clinical' =
+      rawMode === 'preclinical' ? 'preclinical' : 'clinical';
 
     const MAX_TURNS = 20;
     if (!Array.isArray(rawMessages) || rawMessages.length === 0) {

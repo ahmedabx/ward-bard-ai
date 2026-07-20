@@ -33,7 +33,7 @@ export function useChat() {
 
   const currentSession = sessions.find(s => s.id === currentSessionId);
 
-  const sendMessage = useCallback(async (content: string) => {
+  const sendMessage = useCallback(async (content: string, mode?: 'preclinical' | 'clinical') => {
     let sessionId = currentSessionId;
     if (!sessionId) {
       sessionId = uid();
@@ -74,7 +74,7 @@ export function useChat() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
         },
-        body: JSON.stringify({ messages: allMessages }),
+        body: JSON.stringify({ messages: allMessages, mode }),
       });
 
       if (!resp.ok || !resp.body) {

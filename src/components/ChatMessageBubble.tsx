@@ -3,12 +3,13 @@ import { Copy, Bookmark, ThumbsUp, ThumbsDown, Check } from 'lucide-react';
 import { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import type { ChatMessage } from '@/hooks/use-chat';
-import { PubMedEvidence } from '@/components/PubMedEvidence';
+import { AssistantConfidence } from '@/components/AssistantConfidence';
 
 interface ChatMessageBubbleProps {
   message: ChatMessage;
   onSave?: (question: string, answer: string) => void;
   previousUserMessage?: string;
+  isStreaming?: boolean;
 }
 
 export function ChatMessageBubble({ message, onSave, previousUserMessage }: ChatMessageBubbleProps) {

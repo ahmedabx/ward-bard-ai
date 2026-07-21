@@ -6,32 +6,19 @@ interface MedBardLogoProps {
 
 export function MedBardMark({ size = 24 }: { size?: number }) {
   return (
-    <svg
+    <img
+      src="/medbard-logo.svg"
       width={size}
       height={size}
-      viewBox="0 0 32 32"
-      fill="none"
-      stroke="hsl(var(--primary))"
-      strokeWidth="1.75"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      {/* Stethoscope tubing */}
-      <path d="M8 4v8a6 6 0 0 0 12 0V4" />
-      {/* Earpieces */}
-      <circle cx="8" cy="4" r="1.4" fill="hsl(var(--primary))" />
-      <circle cx="20" cy="4" r="1.4" fill="hsl(var(--primary))" />
-      {/* Cord to chestpiece */}
-      <path d="M14 18v5a4 4 0 0 0 4 4h2" />
-      {/* Chestpiece */}
-      <circle cx="23" cy="25" r="3.5" />
-    </svg>
+      alt="MedBard logo"
+      className="block shrink-0"
+      style={{ width: size, height: size }}
+    />
   );
 }
 
 export function MedBardLogo({ size = 'md', showWordmark = true, tagline = false }: MedBardLogoProps) {
-  const markPx = { sm: 20, md: 24, lg: 40 }[size];
+  const markPx = { sm: 24, md: 32, lg: 56 }[size];
   const wordSize = { sm: 'text-lg', md: 'text-xl', lg: 'text-4xl' }[size];
 
   return (

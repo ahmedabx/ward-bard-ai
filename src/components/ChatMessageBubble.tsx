@@ -12,7 +12,7 @@ interface ChatMessageBubbleProps {
   isStreaming?: boolean;
 }
 
-export function ChatMessageBubble({ message, onSave, previousUserMessage }: ChatMessageBubbleProps) {
+export function ChatMessageBubble({ message, onSave, previousUserMessage, isStreaming }: ChatMessageBubbleProps) {
   const [copied, setCopied] = useState(false);
   const [saved, setSaved] = useState(false);
   const [feedback, setFeedback] = useState<'up' | 'down' | null>(null);
@@ -80,7 +80,11 @@ export function ChatMessageBubble({ message, onSave, previousUserMessage }: Chat
           </div>
 
           {previousUserMessage && message.content.length > 10 && (
-            <PubMedEvidence query={previousUserMessage} />
+            <AssistantConfidence
+              query={previousUserMessage}
+              answer={message.content}
+              isStreaming={isStreaming}
+            />
           )}
 
           {/* Educational-use notice */}

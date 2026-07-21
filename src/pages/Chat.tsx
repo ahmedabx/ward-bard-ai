@@ -38,14 +38,18 @@ export default function Chat() {
     <AppLayout inputBar={<ChatInput onSend={(t) => sendMessage(t, mode)} isLoading={isLoading} autoFocus />}>
       <div className="px-4 py-6">
         <div className="max-w-3xl mx-auto">
-          {messages.map((msg, i) => (
-            <ChatMessageBubble
-              key={msg.id}
-              message={msg}
-              onSave={msg.role === 'assistant' ? chat.saveNote : undefined}
-              previousUserMessage={msg.role === 'assistant' ? messages[i - 1]?.content : undefined}
-            />
-          ))}
+          {messages.map((msg, i) => {
+            const isLast = i === messages.length - 1;
+            return (
+              <ChatMessageBubble
+                key={msg.id}
+                message={msg}
+                onSave={msg.role === 'assistant' ? chat.saveNote : undefined}
+                previousUserMessage={msg.role === 'assistant' ? messages[i - 1]?.content : undefined}
+                isStreaming={msg.role === 'assistant' && isLast && isLoading}
+              />
+            );
+          })}
           {isLoading && messages[messages.length - 1]?.role !== 'assistant' && (
             <div className="flex justify-start mb-4">
               <div className="glass-card p-4 space-y-2 w-64">

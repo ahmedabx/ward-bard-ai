@@ -3,15 +3,16 @@ import { Copy, Bookmark, ThumbsUp, ThumbsDown, Check } from 'lucide-react';
 import { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import type { ChatMessage } from '@/hooks/use-chat';
-import { PubMedEvidence } from '@/components/PubMedEvidence';
+import { AssistantConfidence } from '@/components/AssistantConfidence';
 
 interface ChatMessageBubbleProps {
   message: ChatMessage;
   onSave?: (question: string, answer: string) => void;
   previousUserMessage?: string;
+  isStreaming?: boolean;
 }
 
-export function ChatMessageBubble({ message, onSave, previousUserMessage }: ChatMessageBubbleProps) {
+export function ChatMessageBubble({ message, onSave, previousUserMessage, isStreaming }: ChatMessageBubbleProps) {
   const [copied, setCopied] = useState(false);
   const [saved, setSaved] = useState(false);
   const [feedback, setFeedback] = useState<'up' | 'down' | null>(null);
@@ -79,7 +80,11 @@ export function ChatMessageBubble({ message, onSave, previousUserMessage }: Chat
           </div>
 
           {previousUserMessage && message.content.length > 10 && (
-            <PubMedEvidence query={previousUserMessage} />
+            <AssistantConfidence
+              query={previousUserMessage}
+              answer={message.content}
+              isStreaming={isStreaming}
+            />
           )}
 
           {/* Educational-use notice */}

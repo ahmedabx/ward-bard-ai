@@ -36,7 +36,7 @@ export default function Chat() {
 
   return (
     <AppLayout inputBar={<ChatInput onSend={(t) => sendMessage(t, mode)} isLoading={isLoading} autoFocus />}>
-      <div className="px-4 py-6">
+      <div className="px-4 md:px-6 py-5 md:py-6">
         <div className="max-w-3xl mx-auto">
           {messages.map((msg, i) => {
             const isLast = i === messages.length - 1;
@@ -51,8 +51,8 @@ export default function Chat() {
             );
           })}
           {isLoading && messages[messages.length - 1]?.role !== 'assistant' && (
-            <div className="flex justify-start mb-4">
-              <div className="glass-card p-4 space-y-2 w-64">
+            <div className="flex justify-start mb-5 md:mb-4">
+              <div className="glass-card p-4 space-y-2 w-64 max-w-full">
                 <div className="h-3 bg-muted/50 rounded animate-pulse w-3/4" />
                 <div className="h-3 bg-muted/50 rounded animate-pulse w-full" />
                 <div className="h-3 bg-muted/50 rounded animate-pulse w-1/2" />

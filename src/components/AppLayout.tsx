@@ -1,6 +1,6 @@
 import { ReactNode, useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { MessageSquare, User, Calculator, FileQuestion, LogOut, Settings } from 'lucide-react';
+import { MessageSquare, User, Calculator, FileQuestion, LogOut, Settings, Menu, X } from 'lucide-react';
 import type { User as SupaUser } from '@supabase/supabase-js';
 import { MedBardMark } from './MedBardLogo';
 import { useChatContext } from '@/contexts/ChatContext';

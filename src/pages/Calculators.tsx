@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react';
-import { Search, RotateCcw } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { Search, RotateCcw, ChevronDown, ChevronLeft } from 'lucide-react';
 import { AppLayout } from '@/components/AppLayout';
 import {
   calculators,
@@ -8,9 +8,6 @@ import {
   SPECIALTIES,
   Specialty,
 } from '@/lib/calculators';
-
-type Filter = 'All' | Specialty;
-const FILTERS: Filter[] = ['All', ...SPECIALTIES];
 
 const RISK_STYLE: Record<
   CalcResult['risk'],
@@ -23,119 +20,186 @@ const RISK_STYLE: Record<
 
 const HAIRLINE = '0.5px solid hsl(var(--hairline) / var(--hairline-alpha))';
 
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(() =>
+    typeof window !== 'undefined' ? window.matchMedia('(max-width: 767px)').matches : false,
+  );
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 767px)');
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
+  return isMobile;
+}
+
 export default function Calculators() {
-  const [filter, setFilter] = useState<Filter>('All');
   const [query, setQuery] = useState('');
-  const [activeId, setActiveId] = useState<string>(calculators[0].id);
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const isMobile = useIsMobile();
 
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return calculators.filter((c) => {
-      if (filter !== 'All' && c.specialty !== filter) return false;
-      if (q && !`${c.name} ${c.specialty} ${c.description}`.toLowerCase().includes(q)) return false;
-      return true;
+  // Collapsed sections. Default: mobile all collapsed, desktop all expanded.
+  const [collapsed, setCollapsed] = useState<Record<Specialty, boolean>>(() => {
+    const initial = {} as Record<Specialty, boolean>;
+    for (const s of SPECIALTIES) initial[s] = false;
+    return initial;
+  });
+  // When mobile state resolves, sync defaults (only once per mode change).
+  useEffect(() => {
+    setCollapsed(() => {
+      const next = {} as Record<Specialty, boolean>;
+      for (const s of SPECIALTIES) next[s] = isMobile;
+      return next;
     });
-  }, [filter, query]);
+  }, [isMobile]);
 
-  const active = calculators.find((c) => c.id === activeId) ?? filtered[0];
+  const q = query.trim().toLowerCase();
+
+  const grouped = useMemo(() => {
+    const map = new Map<Specialty, Calculator[]>();
+    for (const s of SPECIALTIES) map.set(s, []);
+    for (const c of calculators) {
+      if (q && !`${c.name} ${c.specialty} ${c.description}`.toLowerCase().includes(q)) continue;
+      map.get(c.specialty)?.push(c);
+    }
+    return map;
+  }, [q]);
+
+  // While searching, force-expand any section with a match.
+  const effectiveCollapsed = useMemo(() => {
+    if (!q) return collapsed;
+    const next = { ...collapsed };
+    for (const s of SPECIALTIES) if ((grouped.get(s)?.length ?? 0) > 0) next[s] = false;
+    return next;
+  }, [collapsed, grouped, q]);
+
+  const active = activeId ? calculators.find((c) => c.id === activeId) ?? null : null;
+  const totalMatches = Array.from(grouped.values()).reduce((n, list) => n + list.length, 0);
+
+  const toggle = (s: Specialty) =>
+    setCollapsed((prev) => ({ ...prev, [s]: !prev[s] }));
+
+  // Mobile: show either list or detail. Desktop: side-by-side.
+  const showList = !isMobile || !active;
+  const showDetail = !isMobile || !!active;
 
   return (
     <AppLayout>
-      <div className="h-full flex min-h-0">
-        {/* LEFT PANEL — search + filter + list */}
-        <div
-          className="w-[320px] flex-shrink-0 flex flex-col min-h-0"
-          style={{ borderRight: HAIRLINE, background: 'hsl(var(--surface-sidebar))' }}
-        >
-          <div className="p-3 flex-shrink-0 space-y-3">
-            <div className="relative">
-              <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-foreground/40" />
-              <input
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search calculators…"
-                className="w-full bg-background text-foreground text-xs pl-8 pr-3 py-2 rounded-md outline-none focus:ring-1 focus:ring-primary/50"
-                style={{ border: HAIRLINE }}
-              />
+      <div className="h-full flex flex-col md:flex-row min-h-0">
+        {/* LEFT — grouped list */}
+        {showList && (
+          <div
+            className="w-full md:w-[340px] md:flex-shrink-0 flex flex-col min-h-0"
+            style={{ borderRight: isMobile ? 'none' : HAIRLINE, background: 'hsl(var(--surface-sidebar))' }}
+          >
+            <div className="p-3 flex-shrink-0">
+              <div className="relative">
+                <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-foreground/40" />
+                <input
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Search calculators…"
+                  className="w-full bg-background text-foreground text-sm md:text-xs pl-8 pr-3 py-2.5 md:py-2 rounded-md outline-none focus:ring-1 focus:ring-primary/50"
+                  style={{ border: HAIRLINE }}
+                />
+              </div>
             </div>
-            <div className="flex gap-1.5 overflow-x-auto no-scrollbar -mx-1 px-1 pb-1">
-              {FILTERS.map((f) => {
-                const on = filter === f;
+
+            <div style={{ borderTop: HAIRLINE }} />
+
+            <div className="flex-1 overflow-y-auto p-2">
+              {totalMatches === 0 && (
+                <p className="text-xs text-muted-foreground px-2 py-6 text-center">
+                  No calculators match "{query}".
+                </p>
+              )}
+
+              {SPECIALTIES.map((s) => {
+                const items = grouped.get(s) ?? [];
+                if (items.length === 0) return null;
+                const isCollapsed = effectiveCollapsed[s];
                 return (
-                  <button
-                    key={f}
-                    onClick={() => setFilter(f)}
-                    className="whitespace-nowrap text-[10.5px] px-2.5 py-1 rounded-full transition-colors"
-                    style={{
-                      background: on ? 'hsl(var(--primary) / 0.14)' : 'transparent',
-                      color: on ? 'hsl(var(--primary))' : 'hsl(var(--muted-foreground))',
-                      border: `0.5px solid ${on ? 'hsl(var(--primary) / 0.4)' : 'hsl(var(--hairline) / var(--hairline-alpha))'}`,
-                    }}
-                  >
-                    {f}
-                  </button>
+                  <div key={s} className="mb-1">
+                    <button
+                      onClick={() => toggle(s)}
+                      className="w-full flex items-center justify-between gap-2 px-3 min-h-[44px] rounded-md hover:bg-foreground/[0.04] transition-colors"
+                    >
+                      <span
+                        className="font-serif-display text-[15px] tracking-tight text-foreground/90 text-left"
+                      >
+                        {s}
+                      </span>
+                      <span className="flex items-center gap-2 shrink-0">
+                        <span className="text-[10px] text-foreground/40 tabular-nums">
+                          {items.length}
+                        </span>
+                        <ChevronDown
+                          size={14}
+                          className="text-foreground/50 transition-transform"
+                          style={{ transform: isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)' }}
+                        />
+                      </span>
+                    </button>
+
+                    {!isCollapsed && (
+                      <div className="mt-1 mb-2 space-y-1">
+                        {items.map((c) => {
+                          const on = c.id === activeId;
+                          return (
+                            <button
+                              key={c.id}
+                              onClick={() => setActiveId(c.id)}
+                              className="w-full text-left px-3 py-3 md:py-2.5 rounded-md transition-colors"
+                              style={{
+                                background: on ? 'hsl(var(--primary) / 0.08)' : 'transparent',
+                                border: `0.5px solid ${on ? 'hsl(var(--primary) / 0.30)' : 'hsl(var(--hairline) / var(--hairline-alpha))'}`,
+                                minHeight: 44,
+                              }}
+                            >
+                              <p
+                                className="text-[13px] font-medium break-words"
+                                style={{ color: on ? 'hsl(var(--primary))' : 'hsl(var(--foreground))' }}
+                              >
+                                {c.name}
+                              </p>
+                              <p className="text-[11px] text-foreground/50 mt-0.5 leading-snug break-words">
+                                {c.description}
+                              </p>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
                 );
               })}
             </div>
           </div>
+        )}
 
-          <div style={{ borderTop: HAIRLINE }} />
-
-          <div className="flex-1 overflow-y-auto p-2 space-y-1">
-            {filtered.length === 0 && (
-              <p className="text-xs text-muted-foreground px-2 py-3">No calculators match.</p>
+        {/* RIGHT — active calculator */}
+        {showDetail && (
+          <div className="flex-1 overflow-y-auto min-w-0">
+            {isMobile && active && (
+              <button
+                onClick={() => setActiveId(null)}
+                className="flex items-center gap-1.5 text-sm text-foreground/70 hover:text-foreground px-4 py-3"
+                style={{ borderBottom: HAIRLINE, minHeight: 44 }}
+              >
+                <ChevronLeft size={16} /> All calculators
+              </button>
             )}
-            {filtered.map((c) => {
-              const on = c.id === active?.id;
-              return (
-                <button
-                  key={c.id}
-                  onClick={() => setActiveId(c.id)}
-                  className="w-full text-left px-3 py-2.5 rounded-md transition-colors"
-                  style={{
-                    background: on ? 'hsl(var(--primary) / 0.08)' : 'transparent',
-                    border: `0.5px solid ${on ? 'hsl(var(--primary) / 0.30)' : 'transparent'}`,
-                  }}
-                  onMouseEnter={(e) => {
-                    if (!on) (e.currentTarget as HTMLElement).style.background = 'hsl(var(--foreground) / 0.04)';
-                  }}
-                  onMouseLeave={(e) => {
-                    if (!on) (e.currentTarget as HTMLElement).style.background = 'transparent';
-                  }}
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0 flex-1">
-                      <p
-                        className="text-[12.5px] font-medium truncate"
-                        style={{ color: on ? 'hsl(var(--primary))' : 'hsl(var(--foreground))' }}
-                      >
-                        {c.name}
-                      </p>
-                      <p className="text-[10.5px] text-foreground/45 mt-0.5 line-clamp-2 leading-snug">
-                        {c.description}
-                      </p>
-                    </div>
-                    <span
-                      className="text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded shrink-0 mt-0.5"
-                      style={{
-                        background: 'hsl(var(--foreground) / 0.04)',
-                        color: 'hsl(var(--muted-foreground))',
-                        border: HAIRLINE,
-                      }}
-                    >
-                      {c.specialty.split('/')[0].slice(0, 5)}
-                    </span>
-                  </div>
-                </button>
-              );
-            })}
+            {active ? (
+              <CalculatorPanel key={active.id} calc={active} />
+            ) : (
+              <div className="hidden md:flex h-full items-center justify-center p-8">
+                <p className="text-sm text-foreground/45 text-center max-w-xs">
+                  Select a calculator to get started.
+                </p>
+              </div>
+            )}
           </div>
-        </div>
-
-        {/* RIGHT PANEL — active calculator */}
-        <div className="flex-1 overflow-y-auto min-w-0">
-          {active && <CalculatorPanel key={active.id} calc={active} />}
-        </div>
+        )}
       </div>
     </AppLayout>
   );

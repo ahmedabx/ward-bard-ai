@@ -380,7 +380,8 @@ function StepView(props: {
       {feedback && !loadingFeedback && (
         <button
           onClick={onNext}
-          className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition"
+          className="w-full md:w-auto justify-center md:justify-start flex items-center gap-1.5 px-4 py-3 md:py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition"
+          style={{ minHeight: 44 }}
         >
           {stepIndex + 1 === STEPS.length ? 'See summary' : 'Next step'} <ArrowRight size={14} />
         </button>

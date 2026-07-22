@@ -53,11 +53,15 @@ export function AppLayout({ children, inputBar }: AppLayoutProps) {
   const { mode, setMode } = useStudyMode();
 
   const [user, setUser] = useState<SupaUser | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setUser(data.user));
     const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => setUser(s?.user ?? null));
     return () => sub.subscription.unsubscribe();
   }, []);
+
+  // Close drawer on route change
+  useEffect(() => { setDrawerOpen(false); }, [location.pathname]);
 
   const signOut = async () => {
     await supabase.auth.signOut();
@@ -73,9 +77,20 @@ export function AppLayout({ children, inputBar }: AppLayoutProps) {
         className="h-screen flex overflow-hidden text-foreground"
         style={{ background: 'hsl(var(--surface-main))' }}
       >
-        {/* Left rail — icon nav + brand */}
+        {/* Mobile drawer backdrop */}
+        {drawerOpen && (
+          <div
+            className="md:hidden fixed inset-0 z-40 bg-black/50"
+            onClick={() => setDrawerOpen(false)}
+            aria-hidden
+          />
+        )}
+
+        {/* Left rail — hidden on mobile, drawer on toggle */}
         <aside
-          className="w-[220px] flex-shrink-0 flex flex-col"
+          className={`${
+            drawerOpen ? 'translate-x-0' : '-translate-x-full'
+          } md:translate-x-0 fixed md:static z-50 md:z-auto top-0 left-0 h-full w-[260px] md:w-[220px] flex-shrink-0 flex flex-col transition-transform duration-200 ease-out`}
           style={{ background: 'hsl(var(--surface-rail))', borderRight: HAIRLINE }}
         >
           {/* Brand */}

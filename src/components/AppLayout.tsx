@@ -1,6 +1,6 @@
 import { ReactNode, useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { MessageSquare, User, Calculator, FileQuestion, LogOut, Settings } from 'lucide-react';
+import { MessageSquare, User, Calculator, FileQuestion, LogOut, Settings, Menu, X } from 'lucide-react';
 import type { User as SupaUser } from '@supabase/supabase-js';
 import { MedBardMark } from './MedBardLogo';
 import { useChatContext } from '@/contexts/ChatContext';
@@ -53,11 +53,15 @@ export function AppLayout({ children, inputBar }: AppLayoutProps) {
   const { mode, setMode } = useStudyMode();
 
   const [user, setUser] = useState<SupaUser | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setUser(data.user));
     const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => setUser(s?.user ?? null));
     return () => sub.subscription.unsubscribe();
   }, []);
+
+  // Close drawer on route change
+  useEffect(() => { setDrawerOpen(false); }, [location.pathname]);
 
   const signOut = async () => {
     await supabase.auth.signOut();
@@ -73,15 +77,35 @@ export function AppLayout({ children, inputBar }: AppLayoutProps) {
         className="h-screen flex overflow-hidden text-foreground"
         style={{ background: 'hsl(var(--surface-main))' }}
       >
-        {/* Left rail — icon nav + brand */}
+        {/* Mobile drawer backdrop */}
+        {drawerOpen && (
+          <div
+            className="md:hidden fixed inset-0 z-40 bg-black/50"
+            onClick={() => setDrawerOpen(false)}
+            aria-hidden
+          />
+        )}
+
+        {/* Left rail — hidden on mobile, drawer on toggle */}
         <aside
-          className="w-[220px] flex-shrink-0 flex flex-col"
+          className={`${
+            drawerOpen ? 'translate-x-0' : '-translate-x-full'
+          } md:translate-x-0 fixed md:static z-50 md:z-auto top-0 left-0 h-full w-[260px] md:w-[220px] flex-shrink-0 flex flex-col transition-transform duration-200 ease-out`}
           style={{ background: 'hsl(var(--surface-rail))', borderRight: HAIRLINE }}
         >
           {/* Brand */}
-          <div className="px-4 h-14 flex items-center gap-2.5 flex-shrink-0" style={{ borderBottom: HAIRLINE }}>
-            <MedBardMark size={20} />
-            <span className="font-serif-display text-[17px] text-foreground leading-none">MedBard</span>
+          <div className="px-4 h-14 flex items-center justify-between gap-2.5 flex-shrink-0" style={{ borderBottom: HAIRLINE }}>
+            <div className="flex items-center gap-2.5 min-w-0">
+              <MedBardMark size={20} />
+              <span className="font-serif-display text-[17px] text-foreground leading-none">MedBard</span>
+            </div>
+            <button
+              onClick={() => setDrawerOpen(false)}
+              className="md:hidden p-1.5 -mr-1 rounded-md text-muted-foreground hover:text-foreground"
+              aria-label="Close menu"
+            >
+              <X size={18} />
+            </button>
           </div>
 
           {/* Primary nav */}
@@ -93,17 +117,17 @@ export function AppLayout({ children, inputBar }: AppLayoutProps) {
                 <button
                   key={to}
                   onClick={() => navigate(to)}
-                  className="w-full flex items-center gap-2.5 h-9 px-2.5 rounded-md text-[13px] transition-colors"
+                  className="w-full flex items-center gap-3 md:gap-2.5 min-h-[44px] md:h-9 px-3 md:px-2.5 rounded-md text-[14px] md:text-[13px] transition-colors"
                   style={{
                     background: isActive ? 'hsl(var(--primary) / 0.12)' : 'transparent',
                     color: isActive ? 'hsl(var(--primary))' : 'hsl(var(--muted-foreground))',
                     borderLeft: isActive
                       ? '2px solid hsl(var(--primary))'
                       : '2px solid transparent',
-                    paddingLeft: isActive ? 8 : 10,
+                    paddingLeft: isActive ? 10 : 12,
                   }}
                 >
-                  <Icon size={15} strokeWidth={1.75} />
+                  <Icon size={17} strokeWidth={1.75} />
                   <span className="font-medium">{label}</span>
                 </button>
               );
@@ -133,7 +157,7 @@ export function AppLayout({ children, inputBar }: AppLayoutProps) {
                     <button
                       key={s.id}
                       onClick={() => setCurrentSessionId(s.id)}
-                      className="w-full text-left text-[12px] px-2.5 py-1.5 rounded-md truncate transition-colors"
+                      className="w-full text-left text-[13px] md:text-[12px] px-3 md:px-2.5 py-2.5 md:py-1.5 rounded-md truncate transition-colors"
                       style={{
                         background: s.id === currentSessionId ? 'hsl(var(--foreground) / 0.05)' : 'transparent',
                         color: s.id === currentSessionId ? 'hsl(var(--foreground))' : 'hsl(var(--muted-foreground))',
@@ -203,14 +227,23 @@ export function AppLayout({ children, inputBar }: AppLayoutProps) {
         <div className="flex-1 flex flex-col min-w-0" style={{ background: 'hsl(var(--surface-main))' }}>
           {/* Topbar */}
           <div
-            className="flex items-center justify-between px-5 flex-shrink-0"
-            style={{ height: 48, borderBottom: HAIRLINE }}
+            className="flex flex-col md:flex-row md:items-center md:justify-between px-4 md:px-5 flex-shrink-0"
+            style={{ borderBottom: HAIRLINE }}
           >
-            <div className="flex items-center gap-2">
-              <ActiveIcon size={14} style={{ color: 'hsl(var(--muted-foreground))' }} />
-              <span className="font-serif-display text-[15px] text-foreground">{active.label}</span>
+            <div className="flex items-center justify-between md:justify-start gap-2 h-12 md:h-12 w-full md:w-auto">
+              <div className="flex items-center gap-2 min-w-0">
+                <button
+                  onClick={() => setDrawerOpen(true)}
+                  className="md:hidden -ml-1 p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-foreground/[0.04] transition-colors"
+                  aria-label="Open menu"
+                >
+                  <Menu size={18} />
+                </button>
+                <ActiveIcon size={14} style={{ color: 'hsl(var(--muted-foreground))' }} />
+                <span className="font-serif-display text-[15px] text-foreground truncate">{active.label}</span>
+              </div>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 pb-2 md:pb-0 md:py-0 w-full md:w-auto justify-between md:justify-end">
               <div
                 className="flex items-center rounded-md p-0.5"
                 style={{ border: HAIRLINE, background: 'hsl(var(--surface-rail) / 0.5)' }}
@@ -225,7 +258,7 @@ export function AppLayout({ children, inputBar }: AppLayoutProps) {
                       role="tab"
                       aria-selected={on}
                       onClick={() => setMode(m)}
-                      className="px-2.5 h-6 rounded text-[11px] font-medium transition-colors"
+                      className="px-3 md:px-2.5 h-7 md:h-6 rounded text-[12px] md:text-[11px] font-medium transition-colors"
                       style={{
                         background: on ? 'hsl(var(--primary) / 0.15)' : 'transparent',
                         color: on ? 'hsl(var(--primary))' : 'hsl(var(--muted-foreground))',
@@ -238,7 +271,7 @@ export function AppLayout({ children, inputBar }: AppLayoutProps) {
               </div>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <span className="text-[10.5px] text-muted-foreground cursor-default">
+                  <span className="hidden md:inline text-[10.5px] text-muted-foreground cursor-default">
                     For exam preparation and study
                   </span>
                 </TooltipTrigger>

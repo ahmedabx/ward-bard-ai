@@ -161,13 +161,13 @@ export default function MyPatient() {
   // ---------- Render ----------
   return (
     <AppLayout>
-      <div className="px-4 py-6">
+      <div className="px-4 md:px-6 py-5 md:py-6">
         <div className="max-w-2xl mx-auto">
 
           {error && (
-            <div className="mb-4 p-3 rounded-lg border border-destructive/30 bg-destructive/10 text-xs text-destructive flex items-center justify-between">
+            <div className="mb-5 md:mb-4 p-3 rounded-lg border border-destructive/30 bg-destructive/10 text-xs text-destructive flex items-center justify-between gap-3">
               <span>{error}</span>
-              <button onClick={generateCase} className="underline">Retry</button>
+              <button onClick={generateCase} className="underline shrink-0">Retry</button>
             </div>
           )}
 
@@ -283,22 +283,22 @@ function StepView(props: {
   const locked = chosenOption !== null;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5 md:space-y-4">
       {/* Mini patient strip */}
       <div className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl border border-white/[0.06] bg-card/40">
         <div className="min-w-0">
           <p className="text-sm text-foreground truncate">{patient.name} · {patient.age}{patient.sex?.[0]?.toUpperCase()}</p>
           <p className="text-xs text-muted-foreground truncate">{patient.chief_complaint}</p>
         </div>
-        <span className="text-[10px] uppercase tracking-wider text-primary border border-primary/25 bg-primary/10 px-2 py-1 rounded-md">
-          Step {stepIndex + 1}/{STEPS.length} · {step.label}
+        <span className="text-[10px] uppercase tracking-wider text-primary border border-primary/25 bg-primary/10 px-2 py-1 rounded-md whitespace-nowrap shrink-0">
+          Step {stepIndex + 1}/{STEPS.length}
         </span>
       </div>
 
       {/* Question */}
       <div>
         <p className="text-[10px] uppercase tracking-[0.12em] text-primary mb-1">{step.label}</p>
-        <h3 className="font-serif-display text-xl text-foreground leading-snug">{step.question}</h3>
+        <h3 className="font-serif-display text-lg md:text-xl text-foreground leading-snug">{step.question}</h3>
       </div>
 
       {/* Options */}
@@ -309,7 +309,7 @@ function StepView(props: {
       )}
 
       {options && (
-        <div className="space-y-2">
+        <div className="space-y-3 md:space-y-2">
           {options.map((opt, i) => {
             const isSelected = selectedIdx === i;
             const showResult = locked && isSelected;
@@ -319,7 +319,7 @@ function StepView(props: {
                 key={i}
                 disabled={locked}
                 onClick={() => setSelectedIdx(i)}
-                className={`w-full text-left p-3 rounded-xl border text-sm transition-colors duration-150 ${
+                className={`w-full text-left p-4 md:p-3 rounded-xl border text-base md:text-sm leading-relaxed transition-colors duration-150 ${
                   showCorrect
                     ? 'border-emerald-500/40 bg-emerald-500/10 text-foreground'
                     : showResult && !opt.correct
@@ -328,6 +328,7 @@ function StepView(props: {
                     ? 'border-primary/50 bg-primary/10 text-foreground'
                     : 'border-white/[0.07] bg-card/30 text-foreground/85 hover:border-primary/30 hover:bg-primary/[0.04]'
                 }`}
+                style={{ minHeight: 52 }}
               >
                 {opt.text}
               </button>
@@ -341,7 +342,8 @@ function StepView(props: {
         <button
           disabled={selectedIdx === null}
           onClick={onConfirm}
-          className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium disabled:opacity-30 hover:opacity-90 transition"
+          className="w-full md:w-auto px-4 py-3 md:py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium disabled:opacity-30 hover:opacity-90 transition"
+          style={{ minHeight: 44 }}
         >
           Confirm
         </button>
@@ -378,7 +380,8 @@ function StepView(props: {
       {feedback && !loadingFeedback && (
         <button
           onClick={onNext}
-          className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition"
+          className="w-full md:w-auto justify-center md:justify-start flex items-center gap-1.5 px-4 py-3 md:py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition"
+          style={{ minHeight: 44 }}
         >
           {stepIndex + 1 === STEPS.length ? 'See summary' : 'Next step'} <ArrowRight size={14} />
         </button>

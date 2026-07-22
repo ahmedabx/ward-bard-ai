@@ -93,6 +93,8 @@
 
   html { color-scheme: dark; }
 
+  html, body { overflow-x: hidden; }
+
   body {
     @apply bg-background text-foreground antialiased;
     font-family: 'DM Sans', system-ui, sans-serif;

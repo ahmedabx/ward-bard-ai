@@ -32,9 +32,9 @@ export function ChatInput({ onSend, isLoading, initialValue, autoFocus }: ChatIn
   };
 
   return (
-    <div className="px-5 py-4">
+    <div className="px-4 md:px-5 pt-3 pb-4 md:pt-4 md:pb-4" style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}>
       <div
-        className="max-w-3xl mx-auto flex items-end gap-2 px-3 py-2.5 rounded-lg"
+        className="max-w-3xl mx-auto flex items-end gap-2 px-3 py-3 md:py-2.5 rounded-lg"
         style={{ background: 'hsl(var(--card))', border: HAIRLINE, borderRadius: 8 }}
       >
         <textarea
@@ -45,12 +45,12 @@ export function ChatInput({ onSend, isLoading, initialValue, autoFocus }: ChatIn
           onKeyDown={handleKeyDown}
           placeholder="Ask a medical education question…"
           rows={1}
-          className="flex-1 bg-transparent text-foreground text-sm resize-none outline-none placeholder:text-muted-foreground py-1 max-h-32"
+          className="flex-1 bg-transparent text-foreground text-base md:text-sm resize-none outline-none placeholder:text-muted-foreground py-1 max-h-32"
         />
         <button
           onClick={handleSend}
           disabled={!value.trim() || isLoading}
-          className="flex-shrink-0 flex items-center justify-center h-7 w-7 rounded-md disabled:opacity-30 transition-opacity"
+          className="flex-shrink-0 flex items-center justify-center h-9 w-9 md:h-7 md:w-7 rounded-md disabled:opacity-30 transition-opacity"
           style={{
             background: 'hsl(var(--primary))',
             color: 'hsl(var(--primary-foreground))',
@@ -58,7 +58,7 @@ export function ChatInput({ onSend, isLoading, initialValue, autoFocus }: ChatIn
           }}
           aria-label="Send message"
         >
-          <ArrowUp size={14} strokeWidth={2.25} />
+          <ArrowUp size={16} strokeWidth={2.25} />
         </button>
       </div>
     </div>

@@ -97,26 +97,26 @@ export function ChatMessageBubble({ message, onSave, previousUserMessage, isStre
           {/* Actions */}
           {message.content.length > 10 && (
             <div className="flex items-center gap-1 mt-3 pt-2 border-t border-border/30">
-              <button onClick={handleCopy} className="p-1.5 text-muted-foreground hover:text-foreground transition-all duration-150 hover:scale-110">
-                {copied ? <Check size={14} className="text-primary" /> : <Copy size={14} />}
+              <button onClick={handleCopy} className="p-2.5 md:p-1.5 text-muted-foreground hover:text-foreground transition-all duration-150 hover:scale-110">
+                {copied ? <Check size={16} className="text-primary" /> : <Copy size={16} />}
               </button>
               <button
                 onClick={handleSave}
-                className={`p-1.5 transition-all duration-150 hover:scale-110 ${saved ? 'text-yellow-400' : 'text-muted-foreground hover:text-foreground'}`}
+                className={`p-2.5 md:p-1.5 transition-all duration-150 hover:scale-110 ${saved ? 'text-yellow-400' : 'text-muted-foreground hover:text-foreground'}`}
               >
-                {saved ? <Check size={14} /> : <Bookmark size={14} />}
+                {saved ? <Check size={16} /> : <Bookmark size={16} />}
               </button>
               <button
                 onClick={() => setFeedback('up')}
-                className={`p-1.5 transition-all duration-150 hover:scale-110 ${feedback === 'up' ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+                className={`p-2.5 md:p-1.5 transition-all duration-150 hover:scale-110 ${feedback === 'up' ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}
               >
-                <ThumbsUp size={14} />
+                <ThumbsUp size={16} />
               </button>
               <button
                 onClick={() => setFeedback('down')}
-                className={`p-1.5 transition-all duration-150 hover:scale-110 ${feedback === 'down' ? 'text-destructive' : 'text-muted-foreground hover:text-foreground'}`}
+                className={`p-2.5 md:p-1.5 transition-all duration-150 hover:scale-110 ${feedback === 'down' ? 'text-destructive' : 'text-muted-foreground hover:text-foreground'}`}
               >
-                <ThumbsDown size={14} />
+                <ThumbsDown size={16} />
               </button>
             </div>
           )}

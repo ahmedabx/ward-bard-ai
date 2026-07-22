@@ -161,13 +161,13 @@ export default function MyPatient() {
   // ---------- Render ----------
   return (
     <AppLayout>
-      <div className="px-4 py-6">
+      <div className="px-4 md:px-6 py-5 md:py-6">
         <div className="max-w-2xl mx-auto">
 
           {error && (
-            <div className="mb-4 p-3 rounded-lg border border-destructive/30 bg-destructive/10 text-xs text-destructive flex items-center justify-between">
+            <div className="mb-5 md:mb-4 p-3 rounded-lg border border-destructive/30 bg-destructive/10 text-xs text-destructive flex items-center justify-between gap-3">
               <span>{error}</span>
-              <button onClick={generateCase} className="underline">Retry</button>
+              <button onClick={generateCase} className="underline shrink-0">Retry</button>
             </div>
           )}
 

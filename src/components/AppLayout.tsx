@@ -218,14 +218,23 @@ export function AppLayout({ children, inputBar }: AppLayoutProps) {
         <div className="flex-1 flex flex-col min-w-0" style={{ background: 'hsl(var(--surface-main))' }}>
           {/* Topbar */}
           <div
-            className="flex items-center justify-between px-5 flex-shrink-0"
-            style={{ height: 48, borderBottom: HAIRLINE }}
+            className="flex flex-col md:flex-row md:items-center md:justify-between px-4 md:px-5 flex-shrink-0"
+            style={{ borderBottom: HAIRLINE }}
           >
-            <div className="flex items-center gap-2">
-              <ActiveIcon size={14} style={{ color: 'hsl(var(--muted-foreground))' }} />
-              <span className="font-serif-display text-[15px] text-foreground">{active.label}</span>
+            <div className="flex items-center justify-between md:justify-start gap-2 h-12 md:h-12 w-full md:w-auto">
+              <div className="flex items-center gap-2 min-w-0">
+                <button
+                  onClick={() => setDrawerOpen(true)}
+                  className="md:hidden -ml-1 p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-foreground/[0.04] transition-colors"
+                  aria-label="Open menu"
+                >
+                  <Menu size={18} />
+                </button>
+                <ActiveIcon size={14} style={{ color: 'hsl(var(--muted-foreground))' }} />
+                <span className="font-serif-display text-[15px] text-foreground truncate">{active.label}</span>
+              </div>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 pb-2 md:pb-0 md:py-0 w-full md:w-auto justify-between md:justify-end">
               <div
                 className="flex items-center rounded-md p-0.5"
                 style={{ border: HAIRLINE, background: 'hsl(var(--surface-rail) / 0.5)' }}
@@ -240,7 +249,7 @@ export function AppLayout({ children, inputBar }: AppLayoutProps) {
                       role="tab"
                       aria-selected={on}
                       onClick={() => setMode(m)}
-                      className="px-2.5 h-6 rounded text-[11px] font-medium transition-colors"
+                      className="px-3 md:px-2.5 h-7 md:h-6 rounded text-[12px] md:text-[11px] font-medium transition-colors"
                       style={{
                         background: on ? 'hsl(var(--primary) / 0.15)' : 'transparent',
                         color: on ? 'hsl(var(--primary))' : 'hsl(var(--muted-foreground))',
@@ -253,7 +262,7 @@ export function AppLayout({ children, inputBar }: AppLayoutProps) {
               </div>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <span className="text-[10.5px] text-muted-foreground cursor-default">
+                  <span className="hidden md:inline text-[10.5px] text-muted-foreground cursor-default">
                     For exam preparation and study
                   </span>
                 </TooltipTrigger>

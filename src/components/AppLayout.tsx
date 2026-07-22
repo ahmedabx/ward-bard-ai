@@ -108,17 +108,17 @@ export function AppLayout({ children, inputBar }: AppLayoutProps) {
                 <button
                   key={to}
                   onClick={() => navigate(to)}
-                  className="w-full flex items-center gap-2.5 h-9 px-2.5 rounded-md text-[13px] transition-colors"
+                  className="w-full flex items-center gap-3 md:gap-2.5 min-h-[44px] md:h-9 px-3 md:px-2.5 rounded-md text-[14px] md:text-[13px] transition-colors"
                   style={{
                     background: isActive ? 'hsl(var(--primary) / 0.12)' : 'transparent',
                     color: isActive ? 'hsl(var(--primary))' : 'hsl(var(--muted-foreground))',
                     borderLeft: isActive
                       ? '2px solid hsl(var(--primary))'
                       : '2px solid transparent',
-                    paddingLeft: isActive ? 8 : 10,
+                    paddingLeft: isActive ? 10 : 12,
                   }}
                 >
-                  <Icon size={15} strokeWidth={1.75} />
+                  <Icon size={17} strokeWidth={1.75} />
                   <span className="font-medium">{label}</span>
                 </button>
               );

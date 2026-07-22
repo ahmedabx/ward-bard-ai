@@ -94,9 +94,18 @@ export function AppLayout({ children, inputBar }: AppLayoutProps) {
           style={{ background: 'hsl(var(--surface-rail))', borderRight: HAIRLINE }}
         >
           {/* Brand */}
-          <div className="px-4 h-14 flex items-center gap-2.5 flex-shrink-0" style={{ borderBottom: HAIRLINE }}>
-            <MedBardMark size={20} />
-            <span className="font-serif-display text-[17px] text-foreground leading-none">MedBard</span>
+          <div className="px-4 h-14 flex items-center justify-between gap-2.5 flex-shrink-0" style={{ borderBottom: HAIRLINE }}>
+            <div className="flex items-center gap-2.5 min-w-0">
+              <MedBardMark size={20} />
+              <span className="font-serif-display text-[17px] text-foreground leading-none">MedBard</span>
+            </div>
+            <button
+              onClick={() => setDrawerOpen(false)}
+              className="md:hidden p-1.5 -mr-1 rounded-md text-muted-foreground hover:text-foreground"
+              aria-label="Close menu"
+            >
+              <X size={18} />
+            </button>
           </div>
 
           {/* Primary nav */}

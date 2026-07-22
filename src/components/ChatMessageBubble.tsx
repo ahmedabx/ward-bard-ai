@@ -35,13 +35,13 @@ export function ChatMessageBubble({ message, onSave, previousUserMessage, isStre
   if (isUser) {
     return (
       <motion.div
-        className="flex justify-end mb-3"
+        className="flex justify-end mb-4 md:mb-3"
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.15 }}
       >
-        <div className="max-w-[85%] md:max-w-[70%] px-4 py-2.5 bg-primary/20 border border-primary/20 rounded-2xl rounded-br-md">
-          <p className="text-sm text-foreground">{message.content}</p>
+        <div className="max-w-[88%] md:max-w-[70%] px-4 py-3 md:py-2.5 bg-primary/20 border border-primary/20 rounded-2xl rounded-br-md">
+          <p className="text-base md:text-sm text-foreground leading-relaxed">{message.content}</p>
         </div>
       </motion.div>
     );
@@ -49,14 +49,14 @@ export function ChatMessageBubble({ message, onSave, previousUserMessage, isStre
 
   return (
     <motion.div
-      className="flex justify-start mb-4"
+      className="flex justify-start mb-6 md:mb-4"
       initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35, ease: [0.25, 0.46, 0.45, 0.94] }}
     >
-      <div className="max-w-[90%] md:max-w-[80%]">
-        <div className="glass-card p-5 md:p-6 border border-primary/10 relative group transition-all duration-300">
-          <div className="ward-bard-response prose prose-invert max-w-none text-[0.9rem] leading-[1.8] font-['Inter',sans-serif]">
+      <div className="w-full md:max-w-[80%]">
+        <div className="glass-card p-4 md:p-6 border border-primary/10 relative group transition-all duration-300">
+          <div className="ward-bard-response prose prose-invert max-w-none text-[1rem] md:text-[0.9rem] leading-[1.7] md:leading-[1.8] font-['Inter',sans-serif]">
             <ReactMarkdown
               components={{
                 h1: ({ children }) => <h1 className="text-lg font-semibold font-['Plus_Jakarta_Sans',sans-serif] text-foreground mt-0 mb-3">{children}</h1>,

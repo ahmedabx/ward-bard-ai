@@ -157,7 +157,7 @@ export function AppLayout({ children, inputBar }: AppLayoutProps) {
                     <button
                       key={s.id}
                       onClick={() => setCurrentSessionId(s.id)}
-                      className="w-full text-left text-[12px] px-2.5 py-1.5 rounded-md truncate transition-colors"
+                      className="w-full text-left text-[13px] md:text-[12px] px-3 md:px-2.5 py-2.5 md:py-1.5 rounded-md truncate transition-colors"
                       style={{
                         background: s.id === currentSessionId ? 'hsl(var(--foreground) / 0.05)' : 'transparent',
                         color: s.id === currentSessionId ? 'hsl(var(--foreground))' : 'hsl(var(--muted-foreground))',

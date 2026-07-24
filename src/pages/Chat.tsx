@@ -12,7 +12,7 @@ export default function Chat() {
 
   const chat = useChatContext();
   const { currentSession, sendMessage, isLoading } = chat;
-  const { mode } = useStudyMode();
+  const { mode, setMode } = useStudyMode();
 
   const initialQuery = searchParams.get('q') || '';
 

@@ -4,7 +4,7 @@ import { MessageSquare, User, Calculator, FileQuestion, LogOut, Settings, Menu, 
 import type { User as SupaUser } from '@supabase/supabase-js';
 import { MedBardMark } from './MedBardLogo';
 import { useChatContext } from '@/contexts/ChatContext';
-import { useStudyMode } from '@/contexts/ModeContext';
+
 import { supabase } from '@/integrations/supabase/client';
 import {
   Tooltip,

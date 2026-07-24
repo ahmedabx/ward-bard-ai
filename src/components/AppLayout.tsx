@@ -50,7 +50,7 @@ export function AppLayout({ children, inputBar }: AppLayoutProps) {
   const ActiveIcon = active.Icon;
 
   const { sessions, currentSessionId, setCurrentSessionId, startNewChat } = useChatContext();
-  const { mode, setMode } = useStudyMode();
+
 
   const [user, setUser] = useState<SupaUser | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);

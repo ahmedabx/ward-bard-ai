@@ -142,3 +142,38 @@
 @media (prefers-reduced-motion: reduce) {
   * { animation: none !important; transition: none !important; }
 }
+
+/* ---- Motion polish ---------------------------------------------------- */
+@layer base {
+  a, button, [role="button"], [role="menuitem"], [role="tab"], summary {
+    transition-property: color, background-color, border-color, opacity, box-shadow, transform;
+    transition-duration: 180ms;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  a:active, button:not(:disabled):active, [role="button"]:active {
+    transform: scale(0.985);
+  }
+  [role="menuitem"][data-highlighted] { transition-duration: 150ms; }
+}
+
+/* Shimmer for skeleton loading states */
+.shimmer {
+  position: relative;
+  overflow: hidden;
+}
+.shimmer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    hsl(var(--foreground) / 0.06),
+    transparent
+  );
+  animation: shimmerSweep 1.6s ease-in-out infinite;
+}
+@keyframes shimmerSweep {
+  100% { transform: translateX(100%); }
+}

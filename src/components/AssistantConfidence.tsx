@@ -28,6 +28,7 @@ export function AssistantConfidence({ query, answer, isStreaming }: Props) {
   const [sources, setSources] = useState<RawSource[]>([]);
   const [ready, setReady] = useState(false);
   const [open, setOpen] = useState(false);
+  const panelId = useId();
 
   useEffect(() => {
     let cancelled = false;

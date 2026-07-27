@@ -4,7 +4,14 @@ import { AppLayout } from '@/components/AppLayout';
 import { ChatMessageBubble } from '@/components/ChatMessageBubble';
 import { ChatInput } from '@/components/ChatInput';
 import { useChatContext } from '@/contexts/ChatContext';
-import { useStudyMode } from '@/contexts/ModeContext';
+import { useStudyMode, STUDY_MODES } from '@/contexts/ModeContext';
+import { ChevronDown, Check } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 export default function Chat() {
   const [searchParams, setSearchParams] = useSearchParams();

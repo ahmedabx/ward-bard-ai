@@ -2,7 +2,9 @@
 // - Server-side prompts only; client picks `action`.
 // - Bounded inputs + prompt-injection sanitization.
 // - CORS allowlist, security headers, per-IP rate limit, sanitized errors.
+// - Server-enforced daily case-generation quota (per authenticated user).
 
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import {
   preflight,
   originGuard,
@@ -20,7 +22,57 @@ const MAX_HISTORY = 2000;
 const MAX_QUESTION = 300;
 const MAX_CHOICE = 400;
 
+const DAILY_CASE_LIMIT = 2;
+
+const SPECIALTY_LABELS: Record<string, string> = {
+  cardiology: "Cardiology",
+  nephrology: "Nephrology",
+  gi: "Gastroenterology",
+  neuro: "Neurology",
+  respiratory: "Respiratory medicine",
+  obgyn: "Obstetrics & Gynaecology",
+  emergency: "Emergency medicine / Sepsis",
+  haematology: "Haematology",
+};
+
 const GENERIC_ERROR = { error: "Something went wrong. Please try again." };
+
+function todayUtc(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function serviceClient() {
+  return createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+    { auth: { persistSession: false } },
+  );
+}
+
+async function getUserId(req: Request): Promise<string | null> {
+  const authHeader = req.headers.get("Authorization") ?? "";
+  const token = authHeader.replace(/^Bearer\s+/i, "").trim();
+  if (!token) return null;
+  const client = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_ANON_KEY")!,
+    { auth: { persistSession: false } },
+  );
+  const { data, error } = await client.auth.getUser(token);
+  if (error || !data?.user) return null;
+  return data.user.id;
+}
+
+async function usedToday(userId: string): Promise<number> {
+  const { count, error } = await serviceClient()
+    .from("patient_case_generations")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", userId)
+    .eq("generated_on", todayUtc());
+  if (error) throw new Error("quota");
+  return count ?? 0;
+}
+
 
 const SYS_NEW_CASE_CLINICAL =
   'You are a clinical case generator for USMLE Step 2 CK / clinical MBBS / FCPS learners. Generate a realistic but randomized patient case for medical student practice. Return ONLY valid JSON, no markdown, no explanation. Format: { "name": string, "age": number, "sex": string, "chief_complaint": string, "history": string, "specialty": string }';

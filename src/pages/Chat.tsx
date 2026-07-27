@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { AppLayout } from '@/components/AppLayout';
 import { ChatMessageBubble } from '@/components/ChatMessageBubble';
@@ -6,6 +6,7 @@ import { ChatInput } from '@/components/ChatInput';
 import { useChatContext } from '@/contexts/ChatContext';
 import { useStudyMode, STUDY_MODES, SPECIALTIES } from '@/contexts/ModeContext';
 import { ChevronDown, Check } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -40,6 +41,20 @@ export default function Chat() {
   }, [currentSession?.messages]);
 
   const messages = currentSession?.messages || [];
+
+  const [firstName, setFirstName] = useState<string | null>(null);
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      const meta = data.user?.user_metadata as Record<string, unknown> | undefined;
+      const full =
+        (meta?.given_name as string) ||
+        (meta?.name as string) ||
+        (meta?.full_name as string) ||
+        '';
+      const first = full.trim().split(/\s+/)[0];
+      setFirstName(first && /^[A-Za-z'’-]+$/.test(first) ? first : null);
+    });
+  }, []);
 
   const HAIRLINE = '0.5px solid hsl(var(--hairline) / var(--hairline-alpha))';
 
@@ -115,6 +130,16 @@ export default function Chat() {
 
       <div className="px-4 md:px-6 py-5 md:py-6">
         <div className="max-w-3xl mx-auto">
+          {messages.length === 0 && !isLoading && (
+            <div className="animate-fade-in py-16 md:py-24 text-center">
+              <h1 className="font-serif-display text-2xl md:text-3xl text-foreground">
+                {firstName ? `Hi there, Dr. ${firstName}` : 'Hi there, Doctor'}
+              </h1>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Ask anything — mechanisms, management, or guidelines.
+              </p>
+            </div>
+          )}
           {messages.map((msg, i) => {
             const isLast = i === messages.length - 1;
             return (
@@ -130,9 +155,9 @@ export default function Chat() {
           {isLoading && messages[messages.length - 1]?.role !== 'assistant' && (
             <div className="flex justify-start mb-5 md:mb-4">
               <div className="glass-card p-4 space-y-2 w-64 max-w-full">
-                <div className="h-3 bg-muted/50 rounded animate-pulse w-3/4" />
-                <div className="h-3 bg-muted/50 rounded animate-pulse w-full" />
-                <div className="h-3 bg-muted/50 rounded animate-pulse w-1/2" />
+                <div className="h-3 bg-muted/50 rounded shimmer w-3/4" />
+                <div className="h-3 bg-muted/50 rounded shimmer w-full" />
+                <div className="h-3 bg-muted/50 rounded shimmer w-1/2" />
               </div>
             </div>
           )}

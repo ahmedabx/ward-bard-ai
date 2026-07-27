@@ -562,7 +562,7 @@ function StepView(props: {
   );
 }
 
-function Summary({ patient, records, onNew }: { patient: PatientCase; records: StepRecord[]; onNew: () => void; }) {
+function Summary({ patient, records, remaining, onNew }: { patient: PatientCase; records: StepRecord[]; remaining: number | null; onNew: () => void; }) {
   const correctCount = records.filter(r => r.chosen?.correct).length;
   return (
     <div className="space-y-4">

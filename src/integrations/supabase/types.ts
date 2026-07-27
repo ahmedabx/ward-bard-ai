@@ -38,6 +38,57 @@ export type Database = {
         }
         Relationships: []
       }
+      patient_cases: {
+        Row: {
+          chief_complaint: string
+          completed_at: string | null
+          created_at: string
+          critical_threshold: number
+          decision_points: Json
+          final_score: number | null
+          id: string
+          mode: string
+          outcome: string | null
+          specialty: string
+          stabilize_threshold: number
+          starting_vitals: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          chief_complaint: string
+          completed_at?: string | null
+          created_at?: string
+          critical_threshold?: number
+          decision_points: Json
+          final_score?: number | null
+          id?: string
+          mode?: string
+          outcome?: string | null
+          specialty: string
+          stabilize_threshold?: number
+          starting_vitals: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          chief_complaint?: string
+          completed_at?: string | null
+          created_at?: string
+          critical_threshold?: number
+          decision_points?: Json
+          final_score?: number | null
+          id?: string
+          mode?: string
+          outcome?: string | null
+          specialty?: string
+          stabilize_threshold?: number
+          starting_vitals?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

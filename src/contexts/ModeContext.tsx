@@ -20,7 +20,7 @@ export function ModeProvider({ children }: { children: ReactNode }) {
   const [mode, setModeState] = useState<StudyMode>(() => {
     if (typeof window === 'undefined') return 'clinical';
     const stored = window.localStorage.getItem(STORAGE_KEY);
-    return stored === 'preclinical' || stored === 'clinical' ? stored : 'clinical';
+    return STUDY_MODES.some((m) => m.value === stored) ? (stored as StudyMode) : 'clinical';
   });
 
   useEffect(() => {

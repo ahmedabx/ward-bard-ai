@@ -426,10 +426,10 @@ function PatientCard({ patient, onStart, onExit }: { patient: PatientCase; onSta
           Start case
         </button>
         <button
-          onClick={onNew}
+          onClick={onExit}
           className="px-3 py-2 rounded-lg border border-white/10 text-muted-foreground text-sm hover:text-foreground hover:border-white/20 transition flex items-center gap-1.5"
         >
-          <RotateCcw size={13} /> New case
+          Exit case
         </button>
       </div>
     </motion.div>

@@ -1,9 +1,9 @@
 import { useEffect, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Loader2, RotateCcw, CheckCircle2, XCircle, ArrowRight } from 'lucide-react';
+import { Loader2, RotateCcw, CheckCircle2, XCircle, ArrowRight, Stethoscope } from 'lucide-react';
 import { AppLayout } from '@/components/AppLayout';
 import { supabase } from '@/integrations/supabase/client';
-import { useStudyMode } from '@/contexts/ModeContext';
+import { useStudyMode, SPECIALTIES, Specialty } from '@/contexts/ModeContext';
 
 // ---------- Types ----------
 interface PatientCase {
@@ -31,12 +31,31 @@ const STEPS: { key: string; label: string; question: string }[] = [
   { key: 'management',     label: 'Management',     question: 'What is your first-line management?' },
 ];
 
+const CASE_SPECIALTIES = SPECIALTIES.filter(s => s.value !== 'all');
+
 // ---------- Edge function bridge ----------
-async function callPatientFn(body: Record<string, unknown>): Promise<string> {
+interface FnResult { content: string; used?: number; limit?: number; }
+
+async function callPatientFn(body: Record<string, unknown>): Promise<FnResult> {
   const { data, error } = await supabase.functions.invoke('groq-patient', { body });
-  if (error) throw new Error(error.message || 'Request failed');
+  if (error) {
+    // Surface the server's message (e.g. daily-limit 429) instead of a generic one.
+    let message = error.message || 'Request failed';
+    try {
+      const ctx = (error as any).context;
+      if (ctx && typeof ctx.json === 'function') {
+        const payload = await ctx.json();
+        if (payload?.error) message = payload.error;
+      }
+    } catch { /* ignore */ }
+    throw new Error(message);
+  }
   if (data?.error) throw new Error(data.error);
-  return (data?.content as string) ?? '';
+  return {
+    content: (data?.content as string) ?? '',
+    used: data?.used,
+    limit: data?.limit,
+  };
 }
 
 function extractJson<T>(text: string): T {
@@ -47,12 +66,19 @@ function extractJson<T>(text: string): T {
   return JSON.parse(slice) as T;
 }
 
+const DAILY_LIMIT = 2;
+
 // ---------- Page ----------
 export default function MyPatient() {
   const { mode } = useStudyMode();
   const [patient, setPatient] = useState<PatientCase | null>(null);
   const [loadingCase, setLoadingCase] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const [selectedSpecialty, setSelectedSpecialty] = useState<Specialty | null>(null);
+  const [used, setUsed] = useState<number | null>(null);
+  const [limit, setLimit] = useState<number>(DAILY_LIMIT);
+  const [confirmExit, setConfirmExit] = useState(false);
 
   const [started, setStarted] = useState(false);
   const [stepIndex, setStepIndex] = useState(0);
@@ -65,9 +91,23 @@ export default function MyPatient() {
   const [loadingFeedback, setLoadingFeedback] = useState(false);
   const [finished, setFinished] = useState(false);
 
-  const generateCase = useCallback(async () => {
-    setLoadingCase(true);
-    setError(null);
+  // Fetch today's quota on entry (no case is generated automatically).
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await callPatientFn({ action: 'quota' });
+        if (cancelled) return;
+        setUsed(res.used ?? 0);
+        setLimit(res.limit ?? DAILY_LIMIT);
+      } catch {
+        if (!cancelled) setUsed(0);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  const resetCaseState = () => {
     setPatient(null);
     setStarted(false);
     setStepIndex(0);
@@ -77,17 +117,30 @@ export default function MyPatient() {
     setFeedback(null);
     setChosenOption(null);
     setFinished(false);
+    setConfirmExit(false);
+  };
+
+  const generateCase = useCallback(async (specialty: Specialty) => {
+    setLoadingCase(true);
+    setError(null);
+    resetCaseState();
     try {
-      const raw = await callPatientFn({ action: 'new_case', mode });
-      setPatient(extractJson<PatientCase>(raw));
+      const res = await callPatientFn({ action: 'new_case', mode, specialty });
+      setPatient(extractJson<PatientCase>(res.content));
+      if (typeof res.used === 'number') setUsed(res.used);
+      if (typeof res.limit === 'number') setLimit(res.limit);
     } catch (e: any) {
       setError(e?.message || 'Failed to generate case');
+      // Re-sync the counter so a rejected request shows the real remaining count.
+      try {
+        const q = await callPatientFn({ action: 'quota' });
+        setUsed(q.used ?? used ?? 0);
+        setLimit(q.limit ?? DAILY_LIMIT);
+      } catch { /* ignore */ }
     } finally {
       setLoadingCase(false);
     }
-  }, []);
-
-  useEffect(() => { generateCase(); }, [generateCase]);
+  }, [mode, used]);
 
   const loadOptions = useCallback(async (idx: number) => {
     if (!patient) return;
@@ -98,13 +151,13 @@ export default function MyPatient() {
     setCurrentOptions(null);
     try {
       const step = STEPS[idx];
-      const raw = await callPatientFn({
+      const res = await callPatientFn({
         action: 'options',
         patient,
         stepKey: step.key,
         stepQuestion: step.question,
       });
-      const parsed = extractJson<{ options: Option[] }>(raw);
+      const parsed = extractJson<{ options: Option[] }>(res.content);
       const opts = (parsed.options || []).slice(0, 4);
       setCurrentOptions(opts);
     } catch (e: any) {
@@ -124,7 +177,7 @@ export default function MyPatient() {
     setChosenOption(choice);
     setLoadingFeedback(true);
     try {
-      const fb = await callPatientFn({
+      const res = await callPatientFn({
         action: 'feedback',
         patient,
         stepKey: STEPS[stepIndex].key,
@@ -132,7 +185,7 @@ export default function MyPatient() {
         choiceText: choice.text,
         correct: choice.correct,
       });
-      setFeedback(fb.trim());
+      setFeedback(res.content.trim());
     } catch (e: any) {
       setFeedback('Could not load feedback.');
     } finally {
@@ -158,6 +211,10 @@ export default function MyPatient() {
     }
   };
 
+  const hasActiveCase = !!patient && !finished;
+  const remaining = used === null ? null : Math.max(0, limit - used);
+  const limitReached = remaining === 0;
+
   // ---------- Render ----------
   return (
     <AppLayout>
@@ -165,42 +222,157 @@ export default function MyPatient() {
         <div className="max-w-2xl mx-auto">
 
           {error && (
-            <div className="mb-5 md:mb-4 p-3 rounded-lg border border-destructive/30 bg-destructive/10 text-xs text-destructive flex items-center justify-between gap-3">
-              <span>{error}</span>
-              <button onClick={generateCase} className="underline shrink-0">Retry</button>
+            <div className="mb-5 md:mb-4 p-3 rounded-lg border border-destructive/30 bg-destructive/10 text-xs text-destructive">
+              {error}
             </div>
           )}
 
           {loadingCase && <CaseSkeleton />}
 
-          {!loadingCase && patient && !started && !finished && (
-            <PatientCard patient={patient} onStart={() => setStarted(true)} onNew={generateCase} />
-          )}
-
-          {!loadingCase && patient && started && !finished && (
-            <StepView
-              patient={patient}
-              stepIndex={stepIndex}
-              options={currentOptions}
-              loadingOptions={loadingOptions}
-              selectedIdx={selectedIdx}
-              setSelectedIdx={setSelectedIdx}
-              feedback={feedback}
-              chosenOption={chosenOption}
-              loadingFeedback={loadingFeedback}
-              onConfirm={handleConfirm}
-              onNext={handleNext}
+          {!loadingCase && !patient && (
+            <SpecialtyPicker
+              selected={selectedSpecialty}
+              onSelect={setSelectedSpecialty}
+              onStart={() => selectedSpecialty && generateCase(selectedSpecialty)}
+              remaining={remaining}
+              limit={limit}
+              limitReached={limitReached}
             />
           )}
 
+          {!loadingCase && patient && !started && !finished && (
+            <PatientCard
+              patient={patient}
+              onStart={() => setStarted(true)}
+              onExit={() => setConfirmExit(true)}
+            />
+          )}
+
+          {!loadingCase && patient && started && !finished && (
+            <>
+              <StepView
+                patient={patient}
+                stepIndex={stepIndex}
+                options={currentOptions}
+                loadingOptions={loadingOptions}
+                selectedIdx={selectedIdx}
+                setSelectedIdx={setSelectedIdx}
+                feedback={feedback}
+                chosenOption={chosenOption}
+                loadingFeedback={loadingFeedback}
+                onConfirm={handleConfirm}
+                onNext={handleNext}
+              />
+              <button
+                onClick={() => setConfirmExit(true)}
+                className="mt-5 text-xs text-muted-foreground hover:text-foreground transition"
+              >
+                Exit case
+              </button>
+            </>
+          )}
+
           {finished && patient && (
-            <Summary patient={patient} records={records} onNew={generateCase} />
+            <Summary
+              patient={patient}
+              records={records}
+              remaining={remaining}
+              onNew={resetCaseState}
+            />
+          )}
+
+          {confirmExit && hasActiveCase && (
+            <div className="mt-4 p-4 rounded-xl border border-white/10 bg-card/60">
+              <p className="text-sm text-foreground mb-1">Exit this case?</p>
+              <p className="text-xs text-muted-foreground mb-3">
+                Your progress will be lost. This case has already used one of today's
+                {' '}{limit} generations — exiting won't give it back.
+              </p>
+              <div className="flex gap-2">
+                <button
+                  onClick={resetCaseState}
+                  className="px-3 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium"
+                  style={{ minHeight: 44 }}
+                >
+                  Exit case
+                </button>
+                <button
+                  onClick={() => setConfirmExit(false)}
+                  className="px-3 py-2 rounded-lg border border-white/10 text-muted-foreground text-sm hover:text-foreground transition"
+                  style={{ minHeight: 44 }}
+                >
+                  Keep going
+                </button>
+              </div>
+            </div>
           )}
         </div>
       </div>
     </AppLayout>
   );
 }
+
+function SpecialtyPicker({
+  selected, onSelect, onStart, remaining, limit, limitReached,
+}: {
+  selected: Specialty | null;
+  onSelect: (s: Specialty) => void;
+  onStart: () => void;
+  remaining: number | null;
+  limit: number;
+  limitReached: boolean;
+}) {
+  return (
+    <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
+      <div className="flex items-center gap-2 mb-1">
+        <Stethoscope size={16} className="text-primary" />
+        <p className="text-[10px] uppercase tracking-[0.12em] text-primary">New case</p>
+      </div>
+      <h2 className="font-serif-display text-2xl text-foreground leading-tight mb-1">
+        Choose a specialty
+      </h2>
+      <p className="text-sm text-muted-foreground mb-5">
+        {remaining === null
+          ? 'Checking today\'s allowance…'
+          : limitReached
+          ? "You've used both cases for today — come back tomorrow."
+          : `${remaining} of ${limit} cases left today.`}
+      </p>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-5">
+        {CASE_SPECIALTIES.map(s => (
+          <button
+            key={s.value}
+            disabled={limitReached}
+            onClick={() => onSelect(s.value)}
+            className={`text-left px-4 py-3 rounded-xl border text-sm transition-colors duration-150 disabled:opacity-40 ${
+              selected === s.value
+                ? 'border-primary/50 bg-primary/10 text-foreground'
+                : 'border-white/[0.07] bg-card/30 text-foreground/85 hover:border-primary/30 hover:bg-primary/[0.04]'
+            }`}
+            style={{ minHeight: 48 }}
+          >
+            {s.label}
+          </button>
+        ))}
+      </div>
+
+      <button
+        disabled={!selected || limitReached}
+        onClick={onStart}
+        className="w-full md:w-auto px-4 py-3 md:py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium disabled:opacity-30 hover:opacity-90 transition"
+        style={{ minHeight: 44 }}
+      >
+        Generate case
+      </button>
+
+      <p className="mt-4 text-[11px] text-muted-foreground leading-relaxed">
+        For exam preparation and study only — not medical advice.
+      </p>
+    </motion.div>
+  );
+}
+
 
 // ---------- Subcomponents ----------
 function CaseSkeleton() {

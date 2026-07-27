@@ -389,7 +389,7 @@ function CaseSkeleton() {
   );
 }
 
-function PatientCard({ patient, onStart, onNew }: { patient: PatientCase; onStart: () => void; onNew: () => void; }) {
+function PatientCard({ patient, onStart, onExit }: { patient: PatientCase; onStart: () => void; onExit: () => void; }) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 8 }}

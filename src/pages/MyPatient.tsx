@@ -315,10 +315,6 @@ export default function MyPatient() {
 }
 
 // ---------- Vitals ----------
-const VITAL_LABEL: Record<VitalKey, string> = {
-  hr: 'HR', sbp: 'BP', dbp: 'BP', rr: 'RR', spo2: 'SpO₂', temp: 'Temp',
-};
-
 function VitalsBar({ vitals, delta, status }: { vitals: Vitals; delta: Vitals | null; status: Status }) {
   const st = STATUS_STYLE[status];
   const items: { label: string; value: string; change: number }[] = [

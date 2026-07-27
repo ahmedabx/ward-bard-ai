@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useId } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, ShieldCheck, ShieldAlert, Shield } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -28,6 +28,7 @@ export function AssistantConfidence({ query, answer, isStreaming }: Props) {
   const [sources, setSources] = useState<RawSource[]>([]);
   const [ready, setReady] = useState(false);
   const [open, setOpen] = useState(false);
+  const panelId = useId();
 
   useEffect(() => {
     let cancelled = false;
@@ -62,12 +63,16 @@ export function AssistantConfidence({ query, answer, isStreaming }: Props) {
 
         {hasCitations && (
           <button
+            type="button"
             onClick={() => setOpen((o) => !o)}
-            className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider text-muted-foreground/70 hover:text-foreground transition-colors duration-150"
+            aria-expanded={open}
+            aria-controls={panelId}
+            className="inline-flex items-center gap-1 min-h-[24px] text-[10px] uppercase tracking-wider text-muted-foreground/70 hover:text-foreground transition-colors duration-150 rounded-sm focus:outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           >
             {open ? 'Hide citations' : `View citations (${relevantSources.length})`}
             <ChevronDown
               size={11}
+              aria-hidden="true"
               className={`transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
             />
           </button>
@@ -78,6 +83,8 @@ export function AssistantConfidence({ query, answer, isStreaming }: Props) {
         {open && hasCitations && (
           <motion.ul
             key="citations"
+            id={panelId}
+            aria-label="PubMed citations for this response"
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
@@ -86,13 +93,14 @@ export function AssistantConfidence({ query, answer, isStreaming }: Props) {
           >
             {relevantSources.map((r) => (
               <li key={r.pmid} className="text-muted-foreground/90 leading-relaxed flex gap-2">
-                <span className="text-primary/60 mt-0.5 shrink-0 text-[10px]">•</span>
+                <span aria-hidden="true" className="text-primary/60 mt-0.5 shrink-0 text-[10px]">•</span>
                 <span className="flex-1">
                   <a
-                    href={r.url}
+                    href={r.url || `https://pubmed.ncbi.nlm.nih.gov/${r.pmid}/`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-[12px] text-foreground/90 hover:text-primary transition-colors duration-150 underline-offset-2 hover:underline"
+                    aria-label={`View source: ${r.title} on PubMed (opens in a new tab)`}
+                    className="inline-block text-[12px] text-foreground/90 underline decoration-transparent underline-offset-2 hover:text-primary hover:decoration-primary focus:outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background rounded-sm transition-colors duration-150"
                   >
                     {r.title}
                   </a>

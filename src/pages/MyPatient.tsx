@@ -597,12 +597,19 @@ function Summary({ patient, records, remaining, onNew }: { patient: PatientCase;
         ))}
       </div>
 
-      <button
-        onClick={onNew}
-        className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition"
-      >
-        <RotateCcw size={14} /> New case
-      </button>
+      {remaining === 0 ? (
+        <p className="text-sm text-muted-foreground">
+          You've used both cases for today — come back tomorrow.
+        </p>
+      ) : (
+        <button
+          onClick={onNew}
+          className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition"
+          style={{ minHeight: 44 }}
+        >
+          <RotateCcw size={14} /> New case
+        </button>
+      )}
     </div>
   );
 }

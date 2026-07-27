@@ -8,13 +8,39 @@ export const STUDY_MODES: { value: StudyMode; label: string; hint: string }[] = 
   { value: 'guideline', label: 'Guideline', hint: 'Guideline literature only' },
 ];
 
+export type Specialty =
+  | 'all'
+  | 'cardiology'
+  | 'nephrology'
+  | 'gi'
+  | 'neuro'
+  | 'respiratory'
+  | 'obgyn'
+  | 'emergency'
+  | 'haematology';
+
+export const SPECIALTIES: { value: Specialty; label: string }[] = [
+  { value: 'all', label: 'All Specialties' },
+  { value: 'cardiology', label: 'Cardiology' },
+  { value: 'nephrology', label: 'Nephrology' },
+  { value: 'gi', label: 'GI' },
+  { value: 'neuro', label: 'Neuro' },
+  { value: 'respiratory', label: 'Respiratory' },
+  { value: 'obgyn', label: 'Obs/Gynae' },
+  { value: 'emergency', label: 'Emergency/Sepsis' },
+  { value: 'haematology', label: 'Haematology' },
+];
+
 interface ModeContextValue {
   mode: StudyMode;
   setMode: (m: StudyMode) => void;
+  specialty: Specialty;
+  setSpecialty: (s: Specialty) => void;
 }
 
 const ModeContext = createContext<ModeContextValue | null>(null);
 const STORAGE_KEY = 'medbard.studyMode';
+const SPECIALTY_KEY = 'medbard.specialty';
 
 export function ModeProvider({ children }: { children: ReactNode }) {
   const [mode, setModeState] = useState<StudyMode>(() => {
@@ -23,16 +49,27 @@ export function ModeProvider({ children }: { children: ReactNode }) {
     return STUDY_MODES.some((m) => m.value === stored) ? (stored as StudyMode) : 'clinical';
   });
 
+  const [specialty, setSpecialtyState] = useState<Specialty>(() => {
+    if (typeof window === 'undefined') return 'all';
+    const stored = window.localStorage.getItem(SPECIALTY_KEY);
+    return SPECIALTIES.some((s) => s.value === stored) ? (stored as Specialty) : 'all';
+  });
+
   useEffect(() => {
     try { window.localStorage.setItem(STORAGE_KEY, mode); } catch { /* ignore */ }
   }, [mode]);
 
+  useEffect(() => {
+    try { window.localStorage.setItem(SPECIALTY_KEY, specialty); } catch { /* ignore */ }
+  }, [specialty]);
+
   return (
-    <ModeContext.Provider value={{ mode, setMode: setModeState }}>
+    <ModeContext.Provider value={{ mode, setMode: setModeState, specialty, setSpecialty: setSpecialtyState }}>
       {children}
     </ModeContext.Provider>
   );
 }
+
 
 export function useStudyMode() {
   const ctx = useContext(ModeContext);

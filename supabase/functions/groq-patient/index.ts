@@ -2,7 +2,9 @@
 // - Server-side prompts only; client picks `action`.
 // - Bounded inputs + prompt-injection sanitization.
 // - CORS allowlist, security headers, per-IP rate limit, sanitized errors.
+// - Server-enforced daily case-generation quota (per authenticated user).
 
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import {
   preflight,
   originGuard,
@@ -20,7 +22,57 @@ const MAX_HISTORY = 2000;
 const MAX_QUESTION = 300;
 const MAX_CHOICE = 400;
 
+const DAILY_CASE_LIMIT = 2;
+
+const SPECIALTY_LABELS: Record<string, string> = {
+  cardiology: "Cardiology",
+  nephrology: "Nephrology",
+  gi: "Gastroenterology",
+  neuro: "Neurology",
+  respiratory: "Respiratory medicine",
+  obgyn: "Obstetrics & Gynaecology",
+  emergency: "Emergency medicine / Sepsis",
+  haematology: "Haematology",
+};
+
 const GENERIC_ERROR = { error: "Something went wrong. Please try again." };
+
+function todayUtc(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function serviceClient() {
+  return createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+    { auth: { persistSession: false } },
+  );
+}
+
+async function getUserId(req: Request): Promise<string | null> {
+  const authHeader = req.headers.get("Authorization") ?? "";
+  const token = authHeader.replace(/^Bearer\s+/i, "").trim();
+  if (!token) return null;
+  const client = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_ANON_KEY")!,
+    { auth: { persistSession: false } },
+  );
+  const { data, error } = await client.auth.getUser(token);
+  if (error || !data?.user) return null;
+  return data.user.id;
+}
+
+async function usedToday(userId: string): Promise<number> {
+  const { count, error } = await serviceClient()
+    .from("patient_case_generations")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", userId)
+    .eq("generated_on", todayUtc());
+  if (error) throw new Error("quota");
+  return count ?? 0;
+}
+
 
 const SYS_NEW_CASE_CLINICAL =
   'You are a clinical case generator for USMLE Step 2 CK / clinical MBBS / FCPS learners. Generate a realistic but randomized patient case for medical student practice. Return ONLY valid JSON, no markdown, no explanation. Format: { "name": string, "age": number, "sex": string, "chief_complaint": string, "history": string, "specialty": string }';
@@ -122,19 +174,63 @@ Deno.serve(async (req) => {
     }
     const action = (body as Record<string, unknown>).action;
 
+    if (action === "quota") {
+      const userId = await getUserId(req);
+      if (!userId) return jsonResponse(req, { error: "Not authenticated" }, 401);
+      const used = await usedToday(userId);
+      return jsonResponse(req, { used, limit: DAILY_CASE_LIMIT });
+    }
+
     if (action === "new_case") {
+      const userId = await getUserId(req);
+      if (!userId) return jsonResponse(req, { error: "Not authenticated" }, 401);
+
+      const o = body as Record<string, unknown>;
+      const specialtyKey = typeof o.specialty === "string" ? o.specialty : "";
+      const specialtyLabel = SPECIALTY_LABELS[specialtyKey];
+      if (!specialtyLabel) {
+        return jsonResponse(req, { error: "Please choose a specialty." }, 400);
+      }
+
+      const used = await usedToday(userId);
+      if (used >= DAILY_CASE_LIMIT) {
+        return jsonResponse(
+          req,
+          {
+            error: "You've used both cases for today — come back tomorrow.",
+            limitReached: true,
+            used,
+            limit: DAILY_CASE_LIMIT,
+          },
+          429,
+        );
+      }
+
       const seed = Math.random().toString(36).slice(2, 8);
-      const rawMode = (body as Record<string, unknown>).mode;
+      const rawMode = o.mode;
       const mode = rawMode === "preclinical" ? "preclinical" : "clinical";
       const sys = mode === "preclinical" ? SYS_NEW_CASE_PRECLINICAL : SYS_NEW_CASE_CLINICAL;
       const content = await callGroq(
         apiKey,
         sys,
-        `Generate a new ${mode} patient case. Seed: ${seed}`,
+        `Generate a new ${mode} patient case in the specialty of ${specialtyLabel}. The presenting problem and diagnosis MUST belong to ${specialtyLabel}, and the "specialty" field must be "${specialtyLabel}". Seed: ${seed}`,
         1,
       );
-      return jsonResponse(req, { content });
+
+      // Only a successfully generated case consumes a slot.
+      const { error: insertError } = await serviceClient()
+        .from("patient_case_generations")
+        .insert({ user_id: userId, specialty: specialtyKey, generated_on: todayUtc() });
+      if (insertError) console.error("quota insert failed", insertError.message);
+
+      return jsonResponse(req, {
+        content,
+        used: used + 1,
+        limit: DAILY_CASE_LIMIT,
+      });
     }
+
+
 
     if (action === "options") {
       const o = body as Record<string, unknown>;

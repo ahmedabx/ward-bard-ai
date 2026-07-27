@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useId } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, ShieldCheck, ShieldAlert, Shield } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';

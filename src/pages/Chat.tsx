@@ -76,11 +76,36 @@ export default function Chat() {
               ))}
             </DropdownMenuContent>
           </DropdownMenu>
-          <span className="text-[10.5px] text-muted-foreground">Applies to this chat</span>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                className="flex items-center gap-1.5 rounded-md px-3 md:px-2.5 h-8 md:h-7 text-[12px] md:text-[11px] font-medium text-foreground transition-colors hover:bg-muted/30"
+                style={{ border: HAIRLINE, background: 'hsl(var(--surface-rail) / 0.5)' }}
+                aria-label="Specialty focus"
+              >
+                {activeSpecialty.label}
+                <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" side="top" className="w-52 max-h-72 overflow-y-auto">
+              {SPECIALTIES.map((s) => (
+                <DropdownMenuItem
+                  key={s.value}
+                  onSelect={() => setSpecialty(s.value)}
+                  className="flex items-center justify-between gap-2"
+                >
+                  <span className="text-[13px]">{s.label}</span>
+                  {specialty === s.value && <Check className="h-3.5 w-3.5 text-primary" />}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <span className="hidden sm:inline text-[10.5px] text-muted-foreground">Applies to this chat</span>
         </div>
       </div>
 
-      <ChatInput onSend={(t) => sendMessage(t, mode)} isLoading={isLoading} autoFocus />
+      <ChatInput onSend={(t) => sendMessage(t, mode, specialty)} isLoading={isLoading} autoFocus />
+
     </div>
   );
 

@@ -7,13 +7,13 @@
 @layer base {
   :root {
     /* MedBard — dark only. Values below are the dark palette; :root and .dark share them. */
-    --background: 222 18% 8%;         /* #0f1117 main */
+    --background: 0 0% 0%;             /* #000000 main */
     --foreground: 210 25% 96%;
 
-    --card: 220 22% 7%;                /* slightly deeper than main for panels */
+    --card: 220 18% 6%;                /* lifted above pure-black main */
     --card-foreground: 210 25% 96%;
 
-    --popover: 220 24% 6%;
+    --popover: 220 18% 8%;
     --popover-foreground: 210 25% 96%;
 
     /* Primary teal #1eb98c */
@@ -39,9 +39,9 @@
     --radius: 0.5rem;
 
     /* Application shell surfaces */
-    --surface-rail: 220 25% 5%;        /* #0a0d12 rail */
-    --surface-sidebar: 220 25% 5%;     /* #0a0d12 sidebar */
-    --surface-main: 222 18% 8%;        /* #0f1117 main */
+    --surface-rail: 220 20% 7%;        /* lifted near-black rail */
+    --surface-sidebar: 220 20% 7%;     /* lifted near-black sidebar */
+    --surface-main: 0 0% 0%;           /* #000000 main */
 
     /* Hairline border */
     --hairline: 0 0% 100%;
@@ -49,7 +49,7 @@
 
     --shadow-card: 0 1px 0 hsl(0 0% 100% / 0.02);
 
-    --sidebar-background: 220 25% 5%;
+    --sidebar-background: 220 20% 7%;
     --sidebar-foreground: 210 25% 96%;
     --sidebar-primary: 161 72% 42%;
     --sidebar-primary-foreground: 222 18% 8%;
@@ -61,11 +61,11 @@
 
   /* Dark class kept for compatibility; identical to :root (dark-only product). */
   .dark {
-    --background: 222 18% 8%;
+    --background: 0 0% 0%;
     --foreground: 210 25% 96%;
-    --card: 220 22% 7%;
+    --card: 220 18% 6%;
     --card-foreground: 210 25% 96%;
-    --popover: 220 24% 6%;
+    --popover: 220 18% 8%;
     --popover-foreground: 210 25% 96%;
     --primary: 161 72% 42%;
     --primary-foreground: 222 18% 8%;
@@ -80,9 +80,9 @@
     --border: 220 12% 20%;
     --input: 220 12% 20%;
     --ring: 161 72% 42%;
-    --surface-rail: 220 25% 5%;
-    --surface-sidebar: 220 25% 5%;
-    --surface-main: 222 18% 8%;
+    --surface-rail: 220 20% 7%;
+    --surface-sidebar: 220 20% 7%;
+    --surface-main: 0 0% 0%;
     --hairline: 0 0% 100%;
     --hairline-alpha: 0.08;
   }
@@ -141,4 +141,39 @@
 
 @media (prefers-reduced-motion: reduce) {
   * { animation: none !important; transition: none !important; }
+}
+
+/* ---- Motion polish ---------------------------------------------------- */
+@layer base {
+  a, button, [role="button"], [role="menuitem"], [role="tab"], summary {
+    transition-property: color, background-color, border-color, opacity, box-shadow, transform;
+    transition-duration: 180ms;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  a:active, button:not(:disabled):active, [role="button"]:active {
+    transform: scale(0.985);
+  }
+  [role="menuitem"][data-highlighted] { transition-duration: 150ms; }
+}
+
+/* Shimmer for skeleton loading states */
+.shimmer {
+  position: relative;
+  overflow: hidden;
+}
+.shimmer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    hsl(var(--foreground) / 0.06),
+    transparent
+  );
+  animation: shimmerSweep 1.6s ease-in-out infinite;
+}
+@keyframes shimmerSweep {
+  100% { transform: translateX(100%); }
 }

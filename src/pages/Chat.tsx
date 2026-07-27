@@ -4,7 +4,7 @@ import { AppLayout } from '@/components/AppLayout';
 import { ChatMessageBubble } from '@/components/ChatMessageBubble';
 import { ChatInput } from '@/components/ChatInput';
 import { useChatContext } from '@/contexts/ChatContext';
-import { useStudyMode, STUDY_MODES } from '@/contexts/ModeContext';
+import { useStudyMode, STUDY_MODES, SPECIALTIES } from '@/contexts/ModeContext';
 import { ChevronDown, Check } from 'lucide-react';
 import {
   DropdownMenu,
@@ -19,13 +19,13 @@ export default function Chat() {
 
   const chat = useChatContext();
   const { currentSession, sendMessage, isLoading } = chat;
-  const { mode, setMode } = useStudyMode();
+  const { mode, setMode, specialty, setSpecialty } = useStudyMode();
 
   const initialQuery = searchParams.get('q') || '';
 
   useEffect(() => {
     if (initialQuery && !currentSession) {
-      sendMessage(initialQuery, mode);
+      sendMessage(initialQuery, mode, specialty);
       setSearchParams({});
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -44,6 +44,7 @@ export default function Chat() {
   const HAIRLINE = '0.5px solid hsl(var(--hairline) / var(--hairline-alpha))';
 
   const activeMode = STUDY_MODES.find((m) => m.value === mode) ?? STUDY_MODES[1];
+  const activeSpecialty = SPECIALTIES.find((s) => s.value === specialty) ?? SPECIALTIES[0];
 
   const composer = (
     <div>

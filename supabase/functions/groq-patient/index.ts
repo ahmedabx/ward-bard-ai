@@ -174,19 +174,63 @@ Deno.serve(async (req) => {
     }
     const action = (body as Record<string, unknown>).action;
 
+    if (action === "quota") {
+      const userId = await getUserId(req);
+      if (!userId) return jsonResponse(req, { error: "Not authenticated" }, 401);
+      const used = await usedToday(userId);
+      return jsonResponse(req, { used, limit: DAILY_CASE_LIMIT });
+    }
+
     if (action === "new_case") {
+      const userId = await getUserId(req);
+      if (!userId) return jsonResponse(req, { error: "Not authenticated" }, 401);
+
+      const o = body as Record<string, unknown>;
+      const specialtyKey = typeof o.specialty === "string" ? o.specialty : "";
+      const specialtyLabel = SPECIALTY_LABELS[specialtyKey];
+      if (!specialtyLabel) {
+        return jsonResponse(req, { error: "Please choose a specialty." }, 400);
+      }
+
+      const used = await usedToday(userId);
+      if (used >= DAILY_CASE_LIMIT) {
+        return jsonResponse(
+          req,
+          {
+            error: "You've used both cases for today — come back tomorrow.",
+            limitReached: true,
+            used,
+            limit: DAILY_CASE_LIMIT,
+          },
+          429,
+        );
+      }
+
       const seed = Math.random().toString(36).slice(2, 8);
-      const rawMode = (body as Record<string, unknown>).mode;
+      const rawMode = o.mode;
       const mode = rawMode === "preclinical" ? "preclinical" : "clinical";
       const sys = mode === "preclinical" ? SYS_NEW_CASE_PRECLINICAL : SYS_NEW_CASE_CLINICAL;
       const content = await callGroq(
         apiKey,
         sys,
-        `Generate a new ${mode} patient case. Seed: ${seed}`,
+        `Generate a new ${mode} patient case in the specialty of ${specialtyLabel}. The presenting problem and diagnosis MUST belong to ${specialtyLabel}, and the "specialty" field must be "${specialtyLabel}". Seed: ${seed}`,
         1,
       );
-      return jsonResponse(req, { content });
+
+      // Only a successfully generated case consumes a slot.
+      const { error: insertError } = await serviceClient()
+        .from("patient_case_generations")
+        .insert({ user_id: userId, specialty: specialtyKey, generated_on: todayUtc() });
+      if (insertError) console.error("quota insert failed", insertError.message);
+
+      return jsonResponse(req, {
+        content,
+        used: used + 1,
+        limit: DAILY_CASE_LIMIT,
+      });
     }
+
+
 
     if (action === "options") {
       const o = body as Record<string, unknown>;

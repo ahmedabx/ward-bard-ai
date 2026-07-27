@@ -33,7 +33,7 @@ export function useChat() {
 
   const currentSession = sessions.find(s => s.id === currentSessionId);
 
-  const sendMessage = useCallback(async (content: string, mode?: 'preclinical' | 'clinical') => {
+  const sendMessage = useCallback(async (content: string, mode?: import('@/contexts/ModeContext').StudyMode) => {
     let sessionId = currentSessionId;
     if (!sessionId) {
       sessionId = uid();

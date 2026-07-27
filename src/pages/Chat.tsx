@@ -4,7 +4,14 @@ import { AppLayout } from '@/components/AppLayout';
 import { ChatMessageBubble } from '@/components/ChatMessageBubble';
 import { ChatInput } from '@/components/ChatInput';
 import { useChatContext } from '@/contexts/ChatContext';
-import { useStudyMode } from '@/contexts/ModeContext';
+import { useStudyMode, STUDY_MODES } from '@/contexts/ModeContext';
+import { ChevronDown, Check } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 export default function Chat() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -36,38 +43,43 @@ export default function Chat() {
 
   const HAIRLINE = '0.5px solid hsl(var(--hairline) / var(--hairline-alpha))';
 
+  const activeMode = STUDY_MODES.find((m) => m.value === mode) ?? STUDY_MODES[1];
+
   const composer = (
     <div>
       <div className="px-4 md:px-5 pt-3 md:pt-4 flex justify-center">
         <div className="max-w-3xl w-full flex items-center gap-2">
-          <div
-            className="flex items-center rounded-md p-0.5"
-            style={{ border: HAIRLINE, background: 'hsl(var(--surface-rail) / 0.5)' }}
-            role="tablist"
-            aria-label="Study mode"
-          >
-            {(['preclinical', 'clinical'] as const).map((m) => {
-              const on = mode === m;
-              return (
-                <button
-                  key={m}
-                  role="tab"
-                  aria-selected={on}
-                  onClick={() => setMode(m)}
-                  className="px-3 md:px-2.5 h-7 md:h-6 rounded text-[12px] md:text-[11px] font-medium transition-colors"
-                  style={{
-                    background: on ? 'hsl(var(--primary) / 0.15)' : 'transparent',
-                    color: on ? 'hsl(var(--primary))' : 'hsl(var(--muted-foreground))',
-                  }}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                className="flex items-center gap-1.5 rounded-md px-3 md:px-2.5 h-8 md:h-7 text-[12px] md:text-[11px] font-medium text-foreground transition-colors hover:bg-muted/30"
+                style={{ border: HAIRLINE, background: 'hsl(var(--surface-rail) / 0.5)' }}
+                aria-label="Study mode"
+              >
+                {activeMode.label}
+                <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" side="top" className="w-56">
+              {STUDY_MODES.map((m) => (
+                <DropdownMenuItem
+                  key={m.value}
+                  onSelect={() => setMode(m.value)}
+                  className="flex items-start justify-between gap-2"
                 >
-                  {m === 'preclinical' ? 'Preclinical' : 'Clinical'}
-                </button>
-              );
-            })}
-          </div>
+                  <span className="flex flex-col">
+                    <span className="text-[13px]">{m.label}</span>
+                    <span className="text-[11px] text-muted-foreground">{m.hint}</span>
+                  </span>
+                  {mode === m.value && <Check className="h-3.5 w-3.5 mt-1 text-primary" />}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
           <span className="text-[10.5px] text-muted-foreground">Applies to this chat</span>
         </div>
       </div>
+
       <ChatInput onSend={(t) => sendMessage(t, mode)} isLoading={isLoading} autoFocus />
     </div>
   );

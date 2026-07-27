@@ -1,6 +1,12 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 
-export type StudyMode = 'preclinical' | 'clinical';
+export type StudyMode = 'preclinical' | 'clinical' | 'guideline';
+
+export const STUDY_MODES: { value: StudyMode; label: string; hint: string }[] = [
+  { value: 'preclinical', label: 'Preclinical', hint: 'Mechanistic, Step 1 style' },
+  { value: 'clinical', label: 'Clinical', hint: 'Vignette-based, Step 2 CK style' },
+  { value: 'guideline', label: 'Guideline', hint: 'Guideline literature only' },
+];
 
 interface ModeContextValue {
   mode: StudyMode;

@@ -1,6 +1,6 @@
 import { ReactNode, useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { MessageSquare, User, Calculator, FileQuestion, LogOut, Settings, Menu, X } from 'lucide-react';
+import { MessageSquare, User, Calculator, FileQuestion, LogOut, Settings, Menu, X, Trash2 } from 'lucide-react';
 import type { User as SupaUser } from '@supabase/supabase-js';
 import { MedBardMark } from './MedBardLogo';
 import { useChatContext } from '@/contexts/ChatContext';
@@ -94,7 +94,7 @@ function initialsOf(name?: string | null, email?: string | null) {
   return ((parts[0]?.[0] || '') + (parts[1]?.[0] || '')).toUpperCase() || 'U';
 }
 
-export function AppLayout({ children, inputBar }: AppLayoutProps) {
+export function AppLayout({ children, inputBar, sidebarSection }: AppLayoutProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const isAssistant = location.pathname === '/chat' || location.pathname === '/';
@@ -102,7 +102,7 @@ export function AppLayout({ children, inputBar }: AppLayoutProps) {
   const active = NAV.find(n => n.to === location.pathname) ?? NAV[0];
   const ActiveIcon = active.Icon;
 
-  const { sessions, currentSessionId, setCurrentSessionId, startNewChat } = useChatContext();
+  const { sessions, currentSessionId, setCurrentSessionId, startNewChat, deleteSession } = useChatContext();
 
 
   const [user, setUser] = useState<SupaUser | null>(null);

@@ -24,7 +24,60 @@ import {
 interface AppLayoutProps {
   children: ReactNode;
   inputBar?: ReactNode;
+  /** Per-page history panel rendered in the left rail (My Patient, Qbank Maker). */
+  sidebarSection?: ReactNode;
 }
+
+/** Shared rail history panel shell so every tab's history looks the same. */
+export function RailHistory({
+  title,
+  action,
+  children,
+}: {
+  title: string;
+  action?: ReactNode;
+  children: ReactNode;
+}) {
+  return (
+    <div
+      className="flex-1 flex flex-col min-h-0 mt-2"
+      style={{ borderTop: '0.5px solid hsl(var(--hairline) / var(--hairline-alpha))' }}
+    >
+      <div className="flex items-center justify-between px-4 h-9 flex-shrink-0">
+        <span className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground">{title}</span>
+        {action}
+      </div>
+      <div className="flex-1 overflow-y-auto px-2 pb-2">{children}</div>
+    </div>
+  );
+}
+
+export function RailItem({
+  label,
+  meta,
+  active,
+  onClick,
+}: {
+  label: string;
+  meta?: string;
+  active?: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className="w-full text-left px-3 md:px-2.5 py-2.5 md:py-2 rounded-md transition-colors hover:bg-foreground/[0.04]"
+      style={{
+        background: active ? 'hsl(var(--foreground) / 0.05)' : 'transparent',
+        color: active ? 'hsl(var(--foreground))' : 'hsl(var(--muted-foreground))',
+      }}
+    >
+      <span className="block text-[13px] md:text-[12px] truncate">{label}</span>
+      {meta && <span className="block text-[10px] text-muted-foreground/70 truncate mt-0.5">{meta}</span>}
+    </button>
+  );
+}
+
 
 const NAV = [
   { to: '/chat', label: 'My Assistant', Icon: MessageSquare },

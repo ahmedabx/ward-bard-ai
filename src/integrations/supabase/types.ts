@@ -14,6 +14,65 @@ export type Database = {
   }
   public: {
     Tables: {
+      chat_messages: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          role: string
+          session_id: string
+          user_id: string
+        }
+        Insert: {
+          content?: string
+          created_at?: string
+          id?: string
+          role: string
+          session_id: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          role?: string
+          session_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_messages_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "chat_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chat_sessions: {
+        Row: {
+          created_at: string
+          id: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          title?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       patient_case_generations: {
         Row: {
           created_at: string
@@ -49,9 +108,11 @@ export type Database = {
           id: string
           mode: string
           outcome: string | null
+          progress: Json
           specialty: string
           stabilize_threshold: number
           starting_vitals: Json
+          status: string
           updated_at: string
           user_id: string
         }
@@ -65,9 +126,11 @@ export type Database = {
           id?: string
           mode?: string
           outcome?: string | null
+          progress?: Json
           specialty: string
           stabilize_threshold?: number
           starting_vitals: Json
+          status?: string
           updated_at?: string
           user_id: string
         }
@@ -81,9 +144,56 @@ export type Database = {
           id?: string
           mode?: string
           outcome?: string | null
+          progress?: Json
           specialty?: string
           stabilize_threshold?: number
           starting_vitals?: Json
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      qbank_quizzes: {
+        Row: {
+          answers: Json
+          completed: boolean
+          created_at: string
+          difficulty: string
+          id: string
+          mode: string
+          q_index: number
+          questions: Json
+          score: number | null
+          topic: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          answers?: Json
+          completed?: boolean
+          created_at?: string
+          difficulty?: string
+          id?: string
+          mode?: string
+          q_index?: number
+          questions?: Json
+          score?: number | null
+          topic: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          answers?: Json
+          completed?: boolean
+          created_at?: string
+          difficulty?: string
+          id?: string
+          mode?: string
+          q_index?: number
+          questions?: Json
+          score?: number | null
+          topic?: string
           updated_at?: string
           user_id?: string
         }

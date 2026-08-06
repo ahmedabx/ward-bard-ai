@@ -1,6 +1,6 @@
 import { ReactNode, useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { MessageSquare, User, Calculator, FileQuestion, LogOut, Settings, Menu, X } from 'lucide-react';
+import { MessageSquare, User, Calculator, FileQuestion, LogOut, Settings, Menu, X, Trash2 } from 'lucide-react';
 import type { User as SupaUser } from '@supabase/supabase-js';
 import { MedBardMark } from './MedBardLogo';
 import { useChatContext } from '@/contexts/ChatContext';
@@ -24,7 +24,60 @@ import {
 interface AppLayoutProps {
   children: ReactNode;
   inputBar?: ReactNode;
+  /** Per-page history panel rendered in the left rail (My Patient, Qbank Maker). */
+  sidebarSection?: ReactNode;
 }
+
+/** Shared rail history panel shell so every tab's history looks the same. */
+export function RailHistory({
+  title,
+  action,
+  children,
+}: {
+  title: string;
+  action?: ReactNode;
+  children: ReactNode;
+}) {
+  return (
+    <div
+      className="flex-1 flex flex-col min-h-0 mt-2"
+      style={{ borderTop: '0.5px solid hsl(var(--hairline) / var(--hairline-alpha))' }}
+    >
+      <div className="flex items-center justify-between px-4 h-9 flex-shrink-0">
+        <span className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground">{title}</span>
+        {action}
+      </div>
+      <div className="flex-1 overflow-y-auto px-2 pb-2">{children}</div>
+    </div>
+  );
+}
+
+export function RailItem({
+  label,
+  meta,
+  active,
+  onClick,
+}: {
+  label: string;
+  meta?: string;
+  active?: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className="w-full text-left px-3 md:px-2.5 py-2.5 md:py-2 rounded-md transition-colors hover:bg-foreground/[0.04]"
+      style={{
+        background: active ? 'hsl(var(--foreground) / 0.05)' : 'transparent',
+        color: active ? 'hsl(var(--foreground))' : 'hsl(var(--muted-foreground))',
+      }}
+    >
+      <span className="block text-[13px] md:text-[12px] truncate">{label}</span>
+      {meta && <span className="block text-[10px] text-muted-foreground/70 truncate mt-0.5">{meta}</span>}
+    </button>
+  );
+}
+
 
 const NAV = [
   { to: '/chat', label: 'My Assistant', Icon: MessageSquare },
@@ -41,7 +94,7 @@ function initialsOf(name?: string | null, email?: string | null) {
   return ((parts[0]?.[0] || '') + (parts[1]?.[0] || '')).toUpperCase() || 'U';
 }
 
-export function AppLayout({ children, inputBar }: AppLayoutProps) {
+export function AppLayout({ children, inputBar, sidebarSection }: AppLayoutProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const isAssistant = location.pathname === '/chat' || location.pathname === '/';
@@ -49,7 +102,7 @@ export function AppLayout({ children, inputBar }: AppLayoutProps) {
   const active = NAV.find(n => n.to === location.pathname) ?? NAV[0];
   const ActiveIcon = active.Icon;
 
-  const { sessions, currentSessionId, setCurrentSessionId, startNewChat } = useChatContext();
+  const { sessions, currentSessionId, setCurrentSessionId, startNewChat, deleteSession } = useChatContext();
 
 
   const [user, setUser] = useState<SupaUser | null>(null);
@@ -134,30 +187,28 @@ export function AppLayout({ children, inputBar }: AppLayoutProps) {
             })}
           </nav>
 
-          {/* Recents — only on My Assistant */}
-          {isAssistant && (
-            <div className="flex-1 flex flex-col min-h-0 mt-2" style={{ borderTop: HAIRLINE }}>
-              <div className="flex items-center justify-between px-4 h-9 flex-shrink-0">
-                <span className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
-                  Recent
-                </span>
+          {/* History — chat recents on My Assistant, per-page history elsewhere */}
+          {isAssistant ? (
+            <RailHistory
+              title="Recent"
+              action={
                 <button
                   onClick={startNewChat}
                   className="text-[11px] text-muted-foreground hover:text-primary transition-colors"
                 >
                   + New
                 </button>
-              </div>
-              <div className="flex-1 overflow-y-auto px-2 pb-2">
-                {sessions.length === 0 && (
-                  <p className="text-[11px] text-muted-foreground/70 px-2.5 py-1.5">No chats yet</p>
-                )}
-                <div className="space-y-0.5">
-                  {sessions.map((s) => (
+              }
+            >
+              {sessions.length === 0 && (
+                <p className="text-[11px] text-muted-foreground/70 px-2.5 py-1.5">No chats yet</p>
+              )}
+              <div className="space-y-0.5">
+                {sessions.map((s) => (
+                  <div key={s.id} className="group relative">
                     <button
-                      key={s.id}
                       onClick={() => setCurrentSessionId(s.id)}
-                      className="w-full text-left text-[13px] md:text-[12px] px-3 md:px-2.5 py-2.5 md:py-1.5 rounded-md truncate transition-colors"
+                      className="w-full text-left text-[13px] md:text-[12px] px-3 md:px-2.5 py-2.5 md:py-1.5 pr-8 rounded-md truncate transition-colors"
                       style={{
                         background: s.id === currentSessionId ? 'hsl(var(--foreground) / 0.05)' : 'transparent',
                         color: s.id === currentSessionId ? 'hsl(var(--foreground))' : 'hsl(var(--muted-foreground))',
@@ -165,14 +216,23 @@ export function AppLayout({ children, inputBar }: AppLayoutProps) {
                     >
                       {s.title}
                     </button>
-                  ))}
-                </div>
+                    <button
+                      onClick={() => deleteSession(s.id)}
+                      aria-label={`Delete chat ${s.title}`}
+                      className="absolute right-1 top-1/2 -translate-y-1/2 p-1.5 rounded-md text-muted-foreground/60 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:text-destructive transition-opacity"
+                    >
+                      <Trash2 size={12} />
+                    </button>
+                  </div>
+                ))}
               </div>
-            </div>
+            </RailHistory>
+          ) : sidebarSection ? (
+            sidebarSection
+          ) : (
+            <div className="flex-1" />
           )}
 
-          {/* Spacer when not on assistant */}
-          {!isAssistant && <div className="flex-1" />}
 
           {/* User area */}
           <div className="px-2 py-2 flex-shrink-0" style={{ borderTop: HAIRLINE }}>

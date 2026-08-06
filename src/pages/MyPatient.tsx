@@ -4,7 +4,7 @@ import {
   Loader2, RotateCcw, CheckCircle2, XCircle, MinusCircle, ArrowRight,
   Stethoscope, ChevronDown, ChevronRight, Activity,
 } from 'lucide-react';
-import { AppLayout } from '@/components/AppLayout';
+import { AppLayout, RailHistory, RailItem } from '@/components/AppLayout';
 import { supabase } from '@/integrations/supabase/client';
 import { useStudyMode, SPECIALTIES, Specialty } from '@/contexts/ModeContext';
 
@@ -38,6 +38,22 @@ interface LogEntry {
   feedback: string;
   score: number;
   vitals: Vitals;
+}
+
+interface CaseRow {
+  id: string;
+  chief_complaint: string;
+  specialty: string;
+  starting_vitals: unknown;
+  decision_points: unknown;
+  stabilize_threshold: number;
+  critical_threshold: number;
+  final_score: number | null;
+  outcome: string | null;
+  completed_at: string | null;
+  status?: string | null;
+  progress?: unknown;
+  created_at: string;
 }
 
 const CASE_SPECIALTIES = SPECIALTIES.filter(s => s.value !== 'all');
@@ -109,6 +125,20 @@ export default function MyPatient() {
   const [log, setLog] = useState<LogEntry[]>([]);
   const [outcome, setOutcome] = useState<'stable' | 'critical' | null>(null);
 
+  const [history, setHistory] = useState<CaseRow[]>([]);
+
+  const loadHistory = useCallback(async () => {
+    const { data, error } = await supabase
+      .from('patient_cases')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(25);
+    if (error) { console.error('Failed to load case history:', error.message); return; }
+    setHistory((data || []) as unknown as CaseRow[]);
+  }, []);
+
+  useEffect(() => { loadHistory(); }, [loadHistory]);
+
   // Fetch today's quota on entry (no case is generated automatically).
   useEffect(() => {
     let cancelled = false;
@@ -138,6 +168,41 @@ export default function MyPatient() {
     setConfirmExit(false);
   };
 
+  const persistProgress = useCallback(async (
+    caseId: string,
+    next: { vitals: Vitals; score: number; pointIndex: number; log: LogEntry[] },
+  ) => {
+    const { error } = await supabase
+      .from('patient_cases')
+      .update({ progress: next as unknown as never, status: 'active' })
+      .eq('id', caseId);
+    if (error) console.error('Failed to save case progress:', error.message);
+  }, []);
+
+  const resumeCase = useCallback((row: CaseRow) => {
+    const c: SimCase = {
+      id: row.id,
+      chief_complaint: row.chief_complaint,
+      specialty: row.specialty,
+      starting_vitals: row.starting_vitals as Vitals,
+      decision_points: row.decision_points as unknown as DecisionPoint[],
+      stabilize_threshold: row.stabilize_threshold,
+      critical_threshold: row.critical_threshold,
+    };
+    const p = (row.progress || {}) as Partial<{ vitals: Vitals; score: number; pointIndex: number; log: LogEntry[] }>;
+    setError(null);
+    setConfirmExit(false);
+    setSimCase(c);
+    setVitals(p.vitals ?? c.starting_vitals);
+    setScore(p.score ?? row.final_score ?? 0);
+    setPointIndex(Math.min(p.pointIndex ?? 0, Math.max(0, c.decision_points.length - 1)));
+    setLog(p.log ?? []);
+    setSelectedIdx(null);
+    setAnswered(null);
+    setLastDelta(null);
+    setOutcome((row.outcome as 'stable' | 'critical' | null) ?? null);
+  }, []);
+
   const generateCase = useCallback(async (specialty: Specialty) => {
     setLoadingCase(true);
     setError(null);
@@ -149,6 +214,7 @@ export default function MyPatient() {
       setVitals(c.starting_vitals);
       if (typeof res.used === 'number') setUsed(res.used);
       if (typeof res.limit === 'number') setLimit(res.limit);
+      loadHistory();
     } catch (e: any) {
       setError(e?.message || 'Failed to generate case');
       try {
@@ -159,7 +225,7 @@ export default function MyPatient() {
     } finally {
       setLoadingCase(false);
     }
-  }, [mode, used]);
+  }, [mode, used, loadHistory]);
 
   const endCase = useCallback(async (result: 'stable' | 'critical', finalScore: number) => {
     setOutcome(result);
@@ -167,10 +233,16 @@ export default function MyPatient() {
     try {
       await supabase
         .from('patient_cases')
-        .update({ outcome: result, final_score: finalScore, completed_at: new Date().toISOString() })
+        .update({
+          outcome: result,
+          final_score: finalScore,
+          completed_at: new Date().toISOString(),
+          status: 'completed',
+        })
         .eq('id', simCase.id);
+      loadHistory();
     } catch { /* non-blocking */ }
-  }, [simCase]);
+  }, [simCase, loadHistory]);
 
   const handleConfirm = () => {
     if (selectedIdx === null || !simCase || !vitals || answered) return;
@@ -181,13 +253,20 @@ export default function MyPatient() {
     setLastDelta(option.vitals_delta);
     setScore(nextScore);
     setAnswered(option);
-    setLog(prev => [...prev, {
+    const nextLog: LogEntry[] = [...log, {
       question: simCase.decision_points[pointIndex].question,
       choice: option.text,
       feedback: option.feedback,
       score: option.outcome_score,
       vitals: nextVitals,
-    }]);
+    }];
+    setLog(nextLog);
+    void persistProgress(simCase.id, {
+      vitals: nextVitals,
+      score: nextScore,
+      pointIndex,
+      log: nextLog,
+    });
   };
 
   const handleNext = () => {
@@ -203,6 +282,7 @@ export default function MyPatient() {
       return void endCase(distStable <= distCritical ? 'stable' : 'critical', score);
     }
     setPointIndex(pointIndex + 1);
+    if (vitals) void persistProgress(simCase.id, { vitals, score, pointIndex: pointIndex + 1, log });
     setSelectedIdx(null);
     setAnswered(null);
     setLastDelta(null);
@@ -212,8 +292,27 @@ export default function MyPatient() {
   const remaining = used === null ? null : Math.max(0, limit - used);
   const limitReached = remaining === 0;
 
+  const historySidebar = (
+    <RailHistory title="Case history">
+      {history.length === 0 && (
+        <p className="text-[11px] text-muted-foreground/70 px-2.5 py-1.5">No cases yet</p>
+      )}
+      <div className="space-y-0.5">
+        {history.map((h) => (
+          <RailItem
+            key={h.id}
+            label={h.chief_complaint}
+            meta={`${h.specialty} · ${h.completed_at ? (h.outcome === 'stable' ? 'Stable' : 'Critical') : 'In progress'}`}
+            active={simCase?.id === h.id}
+            onClick={() => resumeCase(h)}
+          />
+        ))}
+      </div>
+    </RailHistory>
+  );
+
   return (
-    <AppLayout>
+    <AppLayout sidebarSection={historySidebar}>
       <div className="px-4 md:px-6 py-5 md:py-6">
         <div className="max-w-2xl mx-auto">
 

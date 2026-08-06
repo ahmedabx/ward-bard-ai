@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Loader2, FileQuestion, RotateCcw, CheckCircle2, XCircle, ArrowRight, Sparkles } from 'lucide-react';
-import { AppLayout } from '@/components/AppLayout';
+import { AppLayout, RailHistory, RailItem } from '@/components/AppLayout';
 import { supabase } from '@/integrations/supabase/client';
 
 interface MCQOption { label: string; text: string; }
@@ -45,6 +45,19 @@ function extractJson<T>(text: string): T {
   return JSON.parse(slice) as T;
 }
 
+interface QuizRow {
+  id: string;
+  topic: string;
+  difficulty: string;
+  mode: string;
+  questions: unknown;
+  answers: unknown;
+  q_index: number;
+  completed: boolean;
+  score: number | null;
+  updated_at: string;
+}
+
 export default function QbankMaker() {
   const [phase, setPhase] = useState<Phase>('setup');
   const [topic, setTopic] = useState('');
@@ -58,9 +71,51 @@ export default function QbankMaker() {
   const [qIndex, setQIndex] = useState(0);
   const [answers, setAnswers] = useState<(string | null)[]>([]);
   const [locked, setLocked] = useState(false);
+  const [quizId, setQuizId] = useState<string | null>(null);
+  const [history, setHistory] = useState<QuizRow[]>([]);
+
+  const loadHistory = useCallback(async () => {
+    const { data, error: e } = await supabase
+      .from('qbank_quizzes')
+      .select('*')
+      .order('updated_at', { ascending: false })
+      .limit(25);
+    if (e) { console.error('Failed to load quiz history:', e.message); return; }
+    setHistory((data || []) as unknown as QuizRow[]);
+  }, []);
+
+  useEffect(() => { loadHistory(); }, [loadHistory]);
+
+  const persistQuiz = useCallback(async (
+    id: string,
+    patch: { answers?: (string | null)[]; q_index?: number; completed?: boolean; score?: number },
+  ) => {
+    const { error: e } = await supabase
+      .from('qbank_quizzes')
+      .update(patch as unknown as never)
+      .eq('id', id);
+    if (e) console.error('Failed to save quiz progress:', e.message);
+    else loadHistory();
+  }, [loadHistory]);
+
+  const openQuiz = useCallback((row: QuizRow) => {
+    const qs = (row.questions || []) as MCQ[];
+    setQuizId(row.id);
+    setTopic(row.topic);
+    setDifficulty(row.difficulty as Difficulty);
+    setMode(row.mode as Mode);
+    setQuestions(qs);
+    const saved = (row.answers || []) as (string | null)[];
+    setAnswers(qs.map((_, i) => saved[i] ?? null));
+    setQIndex(Math.min(row.q_index || 0, Math.max(0, qs.length - 1)));
+    setLocked(row.completed);
+    setError(null);
+    setPhase(row.completed ? 'summary' : 'quiz');
+  }, []);
 
   const reset = () => {
     setPhase('setup');
+    setQuizId(null);
     setQuestions([]);
     setQIndex(0);
     setAnswers([]);
@@ -87,6 +142,25 @@ export default function QbankMaker() {
       setQIndex(0);
       setLocked(false);
       setPhase('quiz');
+
+      const { data: auth } = await supabase.auth.getUser();
+      if (auth.user) {
+        const { data: row, error: insErr } = await supabase
+          .from('qbank_quizzes')
+          .insert({
+            user_id: auth.user.id,
+            topic: t,
+            difficulty,
+            mode,
+            questions: qs as unknown as never,
+            answers: new Array(qs.length).fill(null) as unknown as never,
+            q_index: 0,
+          })
+          .select('id')
+          .single();
+        if (insErr) console.error('Failed to save quiz:', insErr.message);
+        else { setQuizId(row.id); loadHistory(); }
+      }
     } catch (e: any) {
       setError(e?.message || 'Failed to generate questions.');
     } finally {
@@ -101,19 +175,60 @@ export default function QbankMaker() {
     setAnswers(next);
   };
 
-  const confirm = () => { if (answers[qIndex]) setLocked(true); };
+  const confirm = () => {
+    if (!answers[qIndex]) return;
+    setLocked(true);
+    if (quizId) void persistQuiz(quizId, { answers, q_index: qIndex });
+  };
 
   const nextQ = () => {
     if (qIndex + 1 >= questions.length) {
       setPhase('summary');
+      if (quizId) {
+        const score = questions.reduce((acc, q, i) => acc + (answers[i] === q.answer ? 1 : 0), 0);
+        void persistQuiz(quizId, { answers, q_index: qIndex, completed: true, score });
+      }
     } else {
       setQIndex(qIndex + 1);
       setLocked(false);
+      if (quizId) void persistQuiz(quizId, { answers, q_index: qIndex + 1 });
     }
   };
 
+  const historySidebar = (
+    <RailHistory
+      title="Quiz history"
+      action={
+        <button
+          onClick={reset}
+          className="text-[11px] text-muted-foreground hover:text-primary transition-colors"
+        >
+          + New
+        </button>
+      }
+    >
+      {history.length === 0 && (
+        <p className="text-[11px] text-muted-foreground/70 px-2.5 py-1.5">No quizzes yet</p>
+      )}
+      <div className="space-y-0.5">
+        {history.map((h) => {
+          const total = Array.isArray(h.questions) ? (h.questions as unknown[]).length : 0;
+          return (
+            <RailItem
+              key={h.id}
+              label={h.topic}
+              meta={h.completed ? `Scored ${h.score ?? 0}/${total}` : `In progress · ${h.q_index + 1}/${total}`}
+              active={quizId === h.id}
+              onClick={() => openQuiz(h)}
+            />
+          );
+        })}
+      </div>
+    </RailHistory>
+  );
+
   return (
-    <AppLayout>
+    <AppLayout sidebarSection={historySidebar}>
       <div className="px-4 py-6">
         <div className="max-w-2xl mx-auto">
           {phase === 'setup' && (

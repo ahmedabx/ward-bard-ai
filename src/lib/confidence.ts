@@ -86,48 +86,54 @@ export function assessConfidence(
 ): ConfidenceAssessment {
   const queryTokens = tokenize(query);
   const answerTokens = tokenize(answer);
-  const combined = new Set<string>([...queryTokens, ...answerTokens]);
-  const queryDenominator = Math.max(queryTokens.size, 3);
+  // Cap the denominator — long questions shouldn't dilute topical overlap.
+  const queryDenominator = Math.min(Math.max(queryTokens.size, 2), 6);
+  const currentYear = new Date().getFullYear();
 
   const scored: ScoredSource[] = sources.map((s) => {
     const titleTokens = tokenize(`${s.title} ${s.journal}`);
     const queryHits = overlap(titleTokens, queryTokens);
     const answerHits = overlap(titleTokens, answerTokens);
-    // Weight query overlap higher — a source has to be on the actual topic,
-    // not just echo generic terms from the answer.
-    const score =
-      (queryHits / queryDenominator) * 0.7 +
-      Math.min(answerHits / 4, 1) * 0.3;
+    const year = parseInt(s.year, 10);
+    const age = Number.isFinite(year) ? currentYear - year : 99;
+    const recency = age <= 3 ? 0.15 : age <= 6 ? 0.08 : 0;
+    const isGuideline = /guideline|consensus|recommendation|statement/i.test(s.title)
+      ? 0.12
+      : 0;
+    const score = Math.min(
+      1,
+      Math.min(queryHits / queryDenominator, 1) * 0.6 +
+        Math.min(answerHits / 4, 1) * 0.25 +
+        recency +
+        isGuideline,
+    );
     return { ...s, score };
   });
 
-  // Relevance threshold: at least 2 real query-token hits OR score ≥ 0.28.
-  const relevant = scored
-    .filter((s) => {
-      const titleTokens = tokenize(s.title);
-      const hits = overlap(titleTokens, queryTokens);
-      return hits >= 2 || s.score >= 0.28;
-    })
-    .sort((a, b) => b.score - a.score);
+  const ranked = [...scored].sort((a, b) => b.score - a.score);
 
-  const maxAlignment = relevant[0]?.score ?? 0;
+  // Sources considered topically aligned enough to drive the confidence level.
+  const aligned = ranked.filter((s) => {
+    const hits = overlap(tokenize(s.title), queryTokens);
+    return hits >= 1 || s.score >= 0.25;
+  });
+
+  const maxAlignment = ranked[0]?.score ?? 0;
   const volatile = isVolatile(query);
 
   let level: ConfidenceLevel;
-  if (relevant.length >= 2 && maxAlignment >= 0.35 && !volatile) {
+  if (aligned.length >= 2 && maxAlignment >= 0.45) {
     level = 'high';
-  } else if (relevant.length >= 1 && maxAlignment >= 0.35 && !volatile) {
-    level = 'high';
-  } else if (relevant.length >= 1 && maxAlignment >= 0.22) {
+  } else if (aligned.length >= 1 && maxAlignment >= 0.3) {
     level = 'moderate';
-  } else if (relevant.length >= 1) {
-    level = volatile ? 'low' : 'moderate';
+  } else if (ranked.length >= 1) {
+    level = 'moderate';
   } else {
     level = 'low';
   }
 
-  // Suppress high in volatile domains without strong retrieval.
-  if (volatile && level === 'high' && relevant.length < 2) {
+  // Guideline-flux domains need strong retrieval before claiming high.
+  if (volatile && level === 'high' && aligned.length < 3) {
     level = 'moderate';
   }
 
@@ -136,5 +142,9 @@ export function assessConfidence(
     : level === 'moderate' ? 'Moderate confidence'
     : 'Low confidence';
 
-  return { level, label, relevantSources: relevant };
+  // Always surface retrieved sources as clickable citations, even when the
+  // confidence level is only moderate — the user still wants the links.
+  const relevantSources = (aligned.length ? aligned : ranked).slice(0, 5);
+
+  return { level, label, relevantSources };
 }

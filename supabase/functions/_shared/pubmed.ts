@@ -36,19 +36,59 @@ export function sanitizeTerm(raw: unknown): string | null {
   return cleaned.slice(0, 300);
 }
 
-async function fetchJson(url: string, timeoutMs = 8000): Promise<unknown> {
-  const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), timeoutMs);
-  try {
-    const resp = await fetch(url, { signal: ctrl.signal });
-    if (!resp.ok) {
-      throw new Error(`Entrez HTTP ${resp.status} for ${url.split("?")[0]}`);
-    }
-    return await resp.json();
-  } finally {
-    clearTimeout(timer);
-  }
+// Natural-language question words never help a PubMed term and can null out
+// a search entirely. Strip them before querying Entrez.
+const QUESTION_STOPWORDS = new Set([
+  "what", "whats", "which", "why", "how", "when", "where", "who", "whom",
+  "is", "are", "was", "were", "be", "been", "the", "a", "an", "of", "for",
+  "to", "in", "on", "and", "or", "do", "does", "did", "can", "could",
+  "should", "would", "will", "my", "me", "i", "you", "your", "please",
+  "tell", "explain", "give", "about", "current", "latest", "best", "with",
+  "that", "this", "it", "its", "there", "any", "some",
+]);
+
+/** Reduces a chat question to a keyword term Entrez can actually match. */
+export function toSearchTerm(raw: string): string {
+  const words = raw
+    .toLowerCase()
+    .replace(/[^\w\s-]/g, " ")
+    .split(/\s+/)
+    .filter((w) => w.length > 1 && !QUESTION_STOPWORDS.has(w));
+  const term = words.slice(0, 12).join(" ").trim();
+  return term || raw.trim();
 }
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+// NCBI allows ~3 requests/sec without an API key; a burst returns 429.
+async function fetchJson(url: string, timeoutMs = 8000): Promise<unknown> {
+  let lastErr: unknown;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+    try {
+      const resp = await fetch(url, { signal: ctrl.signal });
+      if (resp.status === 429) {
+        await resp.body?.cancel();
+        lastErr = new Error("Entrez HTTP 429 (rate limited)");
+        await sleep(400 * (attempt + 1));
+        continue;
+      }
+      if (!resp.ok) {
+        throw new Error(`Entrez HTTP ${resp.status} for ${url.split("?")[0]}`);
+      }
+      return await resp.json();
+    } catch (e) {
+      lastErr = e;
+      if (attempt === 2) break;
+      await sleep(300);
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+  throw lastErr instanceof Error ? lastErr : new Error("Entrez request failed");
+}
+
 
 async function fetchIds(
   term: string,

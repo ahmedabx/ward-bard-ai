@@ -10,6 +10,13 @@ import {
   sanitizeUserInput,
   MAX_USER_INPUT,
 } from "../_shared/security.ts";
+import {
+  retrieveEvidence,
+  formatEvidenceForPrompt,
+  sanitizeTerm,
+  MIN_DATE,
+  MAX_DATE,
+} from "../_shared/pubmed.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const GENERIC_ERROR = { error: "Something went wrong. Please try again." };

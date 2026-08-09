@@ -41,6 +41,7 @@ const levelStyles: Record<ConfidenceLevel, { color: string; Icon: typeof Shield 
 
 export function AssistantConfidence({ query, answer, isStreaming }: Props) {
   const [sources, setSources] = useState<RawSource[]>([]);
+  const [failed, setFailed] = useState(false);
   const [ready, setReady] = useState(false);
   const [open, setOpen] = useState(false);
   const panelId = useId();
@@ -49,8 +50,16 @@ export function AssistantConfidence({ query, answer, isStreaming }: Props) {
     let cancelled = false;
     setReady(false);
     searchPubMed(query)
-      .then((r) => { if (!cancelled) setSources(r); })
-      .catch(() => { if (!cancelled) setSources([]); })
+      .then((r) => {
+        if (cancelled) return;
+        setSources(r.results);
+        setFailed(r.failed);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setSources([]);
+        setFailed(true);
+      })
       .finally(() => { if (!cancelled) setReady(true); });
     return () => { cancelled = true; };
   }, [query]);
@@ -75,6 +84,14 @@ export function AssistantConfidence({ query, answer, isStreaming }: Props) {
           <Icon size={11} strokeWidth={2} />
           {label}
         </span>
+
+        {!hasCitations && (
+          <span className="text-[10px] text-muted-foreground/70">
+            {failed
+              ? 'Evidence lookup unavailable — answer based on general medical knowledge'
+              : 'No current guideline found — answer based on general medical knowledge'}
+          </span>
+        )}
 
         {hasCitations && (
           <button

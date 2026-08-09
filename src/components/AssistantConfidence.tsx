@@ -10,12 +10,27 @@ interface Props {
   isStreaming?: boolean;
 }
 
-async function searchPubMed(query: string): Promise<RawSource[]> {
+interface Retrieval {
+  results: RawSource[];
+  failed: boolean;
+}
+
+async function searchPubMed(query: string): Promise<Retrieval> {
   const { data, error } = await supabase.functions.invoke('pubmed-search', {
     body: { query },
   });
-  if (error || !data?.results) return [];
-  return data.results as RawSource[];
+  if (error) {
+    console.error('[evidence] pubmed-search failed:', error.message);
+    return { results: [], failed: true };
+  }
+  if (!data || !Array.isArray(data.results)) {
+    console.error('[evidence] unexpected pubmed-search payload:', data);
+    return { results: [], failed: true };
+  }
+  return {
+    results: data.results as RawSource[],
+    failed: Boolean(data.retrievalFailed),
+  };
 }
 
 const levelStyles: Record<ConfidenceLevel, { color: string; Icon: typeof Shield }> = {

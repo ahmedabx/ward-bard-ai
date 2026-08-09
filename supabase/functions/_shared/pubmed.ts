@@ -153,9 +153,10 @@ const REVIEW_FILTER =
  * Throws nothing: failures are reported via `failed` and logged loudly.
  */
 export async function retrieveEvidence(
-  term: string,
+  rawTerm: string,
   max = 6,
 ): Promise<RetrievalOutcome> {
+  const term = toSearchTerm(rawTerm);
   const attempts: Array<{ term: string; retmax: number; sort?: string }> = [
     { term: `${term} AND ${GUIDELINE_FILTER}`, retmax: 3 },
     { term: `${term} AND ${REVIEW_FILTER}`, retmax: 3 },
@@ -173,6 +174,8 @@ export async function retrieveEvidence(
       const found = await fetchIds(a.term, a);
       anySuccess = true;
       for (const id of found) if (!ids.includes(id)) ids.push(id);
+      await sleep(350); // stay under NCBI's ~3 req/sec keyless limit
+
     } catch (e) {
       anyFailure = true;
       console.error(

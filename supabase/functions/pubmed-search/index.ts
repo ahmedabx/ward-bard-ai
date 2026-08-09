@@ -36,18 +36,21 @@ function sanitizeTerm(raw: unknown): string | null {
   return cleaned.slice(0, 300);
 }
 
-async function fetchIds(term: string, withDate: boolean): Promise<string[]> {
+async function fetchIds(
+  term: string,
+  opts: { sort?: string; retmax?: number; mindate?: string } = {},
+): Promise<string[]> {
   const params = new URLSearchParams({
     db: "pubmed",
     term,
-    retmax: "3",
-    sort: "pub+date",
+    retmax: String(opts.retmax ?? 5),
+    sort: opts.sort ?? "relevance",
     retmode: "json",
   });
-  if (withDate) {
+  if (opts.mindate) {
     params.set("datetype", "pdat");
-    params.set("mindate", "2022/01/01");
-    params.set("maxdate", "2026/12/31");
+    params.set("mindate", opts.mindate);
+    params.set("maxdate", "3000");
   }
   const resp = await fetch(`${ESEARCH}?${params}`);
   if (!resp.ok) return [];

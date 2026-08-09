@@ -112,17 +112,24 @@ Deno.serve(async (req) => {
     const cleaned = sanitizeTerm((body as { query?: unknown })?.query);
     if (!cleaned) return jsonResponse(req, { error: "Invalid request" }, 400);
 
-    const attempts: Array<[string, boolean]> = [
-      [`${cleaned} guidelines`, true],
-      [`${cleaned} guideline`, false],
-      [`${cleaned} review`, true],
-      [cleaned, true],
-      [cleaned, false],
+    const GUIDELINE_FILTER =
+      '("guideline"[pt] OR "practice guideline"[pt] OR "consensus development conference"[pt])';
+    const REVIEW_FILTER = '("systematic review"[pt] OR "review"[pt] OR "meta-analysis"[pt])';
+
+    // Layered retrieval: guidelines first, then high-level reviews, then the
+    // best relevance match. Relevance sort (not pub-date) keeps results on-topic.
+    const attempts: Array<{ term: string; sort?: string; mindate?: string; retmax?: number }> = [
+      { term: `${cleaned} AND ${GUIDELINE_FILTER}`, mindate: "2018/01/01", retmax: 3 },
+      { term: `${cleaned} AND ${REVIEW_FILTER}`, mindate: "2021/01/01", retmax: 3 },
+      { term: cleaned, mindate: "2020/01/01", retmax: 3 },
+      { term: cleaned, retmax: 3 },
     ];
-    let ids: string[] = [];
-    for (const [term, withDate] of attempts) {
-      ids = await fetchIds(term, withDate);
-      if (ids.length) break;
+
+    const ids: string[] = [];
+    for (const a of attempts) {
+      if (ids.length >= 6) break;
+      const found = await fetchIds(a.term, a);
+      for (const id of found) if (!ids.includes(id)) ids.push(id);
     }
     if (!ids.length) return jsonResponse(req, { results: [] });
 

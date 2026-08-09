@@ -1,5 +1,7 @@
 // PubMed/NCBI Entrez proxy. Keeps NCBI calls off the browser, adds rate
 // limiting, CORS allowlist, security headers, and sanitized errors.
+// Retrieval window and layering live in ../_shared/pubmed.ts so the chat
+// function grounds on exactly the same evidence the Evidence panel shows.
 
 import {
   preflight,
@@ -8,88 +10,9 @@ import {
   rateLimit,
   clientKey,
 } from "../_shared/security.ts";
-
-const ESEARCH = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi";
-const ESUMMARY = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi";
+import { retrieveEvidence, sanitizeTerm } from "../_shared/pubmed.ts";
 
 const GENERIC_ERROR = { error: "Something went wrong. Please try again." };
-
-interface PubMedResult {
-  pmid: string;
-  title: string;
-  authorLine: string;
-  journal: string;
-  year: string;
-  url: string;
-}
-
-function sanitizeTerm(raw: unknown): string | null {
-  if (typeof raw !== "string") return null;
-  // Allow only chars that make sense for a PubMed term.
-  const cleaned = raw
-    .normalize("NFKC")
-    .replace(/[\u200B-\u200F\u202A-\u202E\uFEFF]/g, "")
-    .replace(/[^\w\s\-+().,/:'"]/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-  if (!cleaned) return null;
-  return cleaned.slice(0, 300);
-}
-
-async function fetchIds(
-  term: string,
-  opts: { sort?: string; retmax?: number; mindate?: string } = {},
-): Promise<string[]> {
-  const params = new URLSearchParams({
-    db: "pubmed",
-    term,
-    retmax: String(opts.retmax ?? 5),
-    sort: opts.sort ?? "relevance",
-    retmode: "json",
-  });
-  if (opts.mindate) {
-    params.set("datetype", "pdat");
-    params.set("mindate", opts.mindate);
-    params.set("maxdate", "3000");
-  }
-  const resp = await fetch(`${ESEARCH}?${params}`);
-  if (!resp.ok) return [];
-  const data = await resp.json().catch(() => null);
-  return data?.esearchresult?.idlist ?? [];
-}
-
-async function fetchSummary(ids: string[]): Promise<PubMedResult[]> {
-  const params = new URLSearchParams({
-    db: "pubmed",
-    id: ids.join(","),
-    retmode: "json",
-  });
-  const resp = await fetch(`${ESUMMARY}?${params}`);
-  if (!resp.ok) return [];
-  const data = await resp.json().catch(() => null);
-  const result = data?.result;
-  if (!result) return [];
-  return ids
-    .map((pmid): PubMedResult | null => {
-      const r = result[pmid];
-      if (!r) return null;
-      const authors = Array.isArray(r.authors) ? r.authors : [];
-      const firstAuthor = authors[0]?.name || "Unknown";
-      const authorLine =
-        authors.length > 1 ? `${firstAuthor} et al.` : firstAuthor;
-      const pubdate: string = r.pubdate || "";
-      const year = (pubdate.match(/\d{4}/) || [""])[0];
-      return {
-        pmid,
-        title: r.title || "Untitled",
-        authorLine,
-        journal: r.fulljournalname || r.source || "",
-        year,
-        url: `https://pubmed.ncbi.nlm.nih.gov/${pmid}/`,
-      };
-    })
-    .filter((x): x is PubMedResult => x !== null);
-}
 
 Deno.serve(async (req) => {
   const pre = preflight(req);
@@ -112,29 +35,12 @@ Deno.serve(async (req) => {
     const cleaned = sanitizeTerm((body as { query?: unknown })?.query);
     if (!cleaned) return jsonResponse(req, { error: "Invalid request" }, 400);
 
-    const GUIDELINE_FILTER =
-      '("guideline"[pt] OR "practice guideline"[pt] OR "consensus development conference"[pt])';
-    const REVIEW_FILTER = '("systematic review"[pt] OR "review"[pt] OR "meta-analysis"[pt])';
-
-    // Layered retrieval: guidelines first, then high-level reviews, then the
-    // best relevance match. Relevance sort (not pub-date) keeps results on-topic.
-    const attempts: Array<{ term: string; sort?: string; mindate?: string; retmax?: number }> = [
-      { term: `${cleaned} AND ${GUIDELINE_FILTER}`, mindate: "2018/01/01", retmax: 3 },
-      { term: `${cleaned} AND ${REVIEW_FILTER}`, mindate: "2021/01/01", retmax: 3 },
-      { term: cleaned, mindate: "2020/01/01", retmax: 3 },
-      { term: cleaned, retmax: 3 },
-    ];
-
-    const ids: string[] = [];
-    for (const a of attempts) {
-      if (ids.length >= 6) break;
-      const found = await fetchIds(a.term, a);
-      for (const id of found) if (!ids.includes(id)) ids.push(id);
-    }
-    if (!ids.length) return jsonResponse(req, { results: [] });
-
-    const results = await fetchSummary(ids);
-    return jsonResponse(req, { results });
+    const outcome = await retrieveEvidence(cleaned);
+    return jsonResponse(req, {
+      results: outcome.results,
+      retrievalFailed: outcome.failed,
+      window: outcome.window,
+    });
   } catch (e) {
     console.error("pubmed-search error:", e);
     return jsonResponse(req, GENERIC_ERROR, 500);

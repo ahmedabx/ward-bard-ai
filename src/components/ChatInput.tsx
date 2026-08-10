@@ -12,6 +12,7 @@ const HAIRLINE = '0.5px solid hsl(var(--hairline) / var(--hairline-alpha))';
 
 export function ChatInput({ onSend, isLoading, initialValue, autoFocus }: ChatInputProps) {
   const [value, setValue] = useState(initialValue || '');
+  const [focused, setFocused] = useState(false);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => { if (initialValue) setValue(initialValue); }, [initialValue]);
@@ -32,10 +33,18 @@ export function ChatInput({ onSend, isLoading, initialValue, autoFocus }: ChatIn
   };
 
   return (
-    <div className="px-4 md:px-5 pt-3 pb-4 md:pt-4 md:pb-4" style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}>
+    <div
+      className="px-4 md:px-6 pt-2 pb-4"
+      style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}
+    >
       <div
-        className="max-w-3xl mx-auto flex items-end gap-2 px-3 py-3 md:py-2.5 rounded-lg"
-        style={{ background: 'hsl(var(--card))', border: HAIRLINE, borderRadius: 8 }}
+        className="chat-column flex items-end gap-2 px-4 py-3 transition-[box-shadow,border-color] duration-150"
+        style={{
+          background: 'hsl(var(--card))',
+          border: HAIRLINE,
+          borderRadius: 8,
+          boxShadow: focused ? '0 0 0 1px hsl(var(--primary))' : 'none',
+        }}
       >
         <textarea
           ref={inputRef}
@@ -43,14 +52,16 @@ export function ChatInput({ onSend, isLoading, initialValue, autoFocus }: ChatIn
           value={value}
           onChange={e => setValue(e.target.value)}
           onKeyDown={handleKeyDown}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
           placeholder="Ask a medical education question…"
           rows={1}
-          className="flex-1 bg-transparent text-foreground text-base md:text-sm resize-none outline-none placeholder:text-muted-foreground py-1 max-h-32"
+          className="flex-1 bg-transparent text-foreground text-base md:text-[15px] leading-6 resize-none outline-none placeholder:text-muted-foreground/55 py-1 max-h-40"
         />
         <button
           onClick={handleSend}
           disabled={!value.trim() || isLoading}
-          className="flex-shrink-0 flex items-center justify-center h-9 w-9 md:h-7 md:w-7 rounded-md disabled:opacity-30 transition-opacity"
+          className="flex-shrink-0 flex items-center justify-center h-9 w-9 md:h-8 md:w-8 rounded-md disabled:opacity-30 transition-opacity"
           style={{
             background: 'hsl(var(--primary))',
             color: 'hsl(var(--primary-foreground))',

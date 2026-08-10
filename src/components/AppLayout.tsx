@@ -1,6 +1,6 @@
 import { ReactNode, useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { MessageSquare, User, Calculator, FileQuestion, LogOut, Settings, Menu, X, Trash2 } from 'lucide-react';
+import { MessageSquare, User, Calculator, FileQuestion, LogOut, Settings, Menu, X, Trash2, PanelLeftClose, PanelLeft, Plus } from 'lucide-react';
 import type { User as SupaUser } from '@supabase/supabase-js';
 import { MedBardMark } from './MedBardLogo';
 import { useChatContext } from '@/contexts/ChatContext';
@@ -107,6 +107,8 @@ export function AppLayout({ children, inputBar, sidebarSection }: AppLayoutProps
 
   const [user, setUser] = useState<SupaUser | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(() => localStorage.getItem('medbard.railCollapsed') === '1');
+  useEffect(() => { localStorage.setItem('medbard.railCollapsed', collapsed ? '1' : '0'); }, [collapsed]);
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setUser(data.user));
     const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => setUser(s?.user ?? null));
@@ -143,15 +145,29 @@ export function AppLayout({ children, inputBar, sidebarSection }: AppLayoutProps
         <aside
           className={`${
             drawerOpen ? 'translate-x-0' : '-translate-x-full'
-          } md:translate-x-0 fixed md:static z-50 md:z-auto top-0 left-0 h-full w-[260px] md:w-[220px] flex-shrink-0 flex flex-col transition-transform duration-200 ease-out`}
-          style={{ background: 'hsl(var(--surface-rail))', borderRight: HAIRLINE }}
+          } md:translate-x-0 fixed md:static z-50 md:z-auto top-0 left-0 h-full w-[260px] flex-shrink-0 flex flex-col overflow-hidden transition-[transform,width] duration-200 ease-out`}
+          style={{
+            background: 'hsl(var(--surface-rail))',
+            borderRight: HAIRLINE,
+            ['--rail-w' as string]: collapsed ? '64px' : '220px',
+          }}
+          data-collapsed={collapsed ? 'true' : 'false'}
         >
           {/* Brand */}
           <div className="px-4 h-14 flex items-center justify-between gap-2.5 flex-shrink-0" style={{ borderBottom: HAIRLINE }}>
             <div className="flex items-center gap-2.5 min-w-0">
               <MedBardMark size={20} />
-              <span className="font-serif-display text-[17px] text-foreground leading-none">MedBard</span>
+              {!collapsed && (
+                <span className="font-serif-display text-[17px] text-foreground leading-none truncate">MedBard</span>
+              )}
             </div>
+            <button
+              onClick={() => setCollapsed(c => !c)}
+              className="hidden md:flex items-center justify-center h-7 w-7 rounded-md text-muted-foreground/70 hover:text-foreground hover:bg-foreground/[0.05]"
+              aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            >
+              {collapsed ? <PanelLeft size={15} /> : <PanelLeftClose size={15} />}
+            </button>
             <button
               onClick={() => setDrawerOpen(false)}
               className="md:hidden p-1.5 -mr-1 rounded-md text-muted-foreground hover:text-foreground"
@@ -170,7 +186,8 @@ export function AppLayout({ children, inputBar, sidebarSection }: AppLayoutProps
                 <button
                   key={to}
                   onClick={() => navigate(to)}
-                  className="w-full flex items-center gap-3 md:gap-2.5 min-h-[44px] md:h-9 px-3 md:px-2.5 rounded-md text-[14px] md:text-[13px] transition-colors"
+                  title={collapsed ? label : undefined}
+                  className="w-full flex items-center gap-3 md:gap-2.5 min-h-[44px] md:h-9 px-3 md:px-2.5 rounded-md text-[14px] md:text-[13px] transition-colors hover:bg-foreground/[0.05]"
                   style={{
                     background: isActive ? 'hsl(var(--primary) / 0.12)' : 'transparent',
                     color: isActive ? 'hsl(var(--primary))' : 'hsl(var(--muted-foreground))',
@@ -180,23 +197,26 @@ export function AppLayout({ children, inputBar, sidebarSection }: AppLayoutProps
                     paddingLeft: isActive ? 10 : 12,
                   }}
                 >
-                  <Icon size={17} strokeWidth={1.75} />
-                  <span className="font-medium">{label}</span>
+                  <Icon size={17} strokeWidth={1.75} className="shrink-0" />
+                  {!collapsed && <span className="font-medium truncate">{label}</span>}
                 </button>
               );
             })}
           </nav>
 
           {/* History — chat recents on My Assistant, per-page history elsewhere */}
-          {isAssistant ? (
+          {collapsed ? (
+            <div className="flex-1" />
+          ) : isAssistant ? (
             <RailHistory
               title="Recent"
               action={
                 <button
                   onClick={startNewChat}
-                  className="text-[11px] text-muted-foreground hover:text-primary transition-colors"
+                  className="inline-flex items-center gap-1 h-6 px-2 rounded-md text-[11px] font-medium text-primary hover:text-primary-foreground hover:bg-primary transition-colors"
+                  style={{ border: '1px solid hsl(var(--primary) / 0.5)' }}
                 >
-                  + New
+                  <Plus size={11} /> New chat
                 </button>
               }
             >
@@ -208,7 +228,7 @@ export function AppLayout({ children, inputBar, sidebarSection }: AppLayoutProps
                   <div key={s.id} className="group relative">
                     <button
                       onClick={() => setCurrentSessionId(s.id)}
-                      className="w-full text-left text-[13px] md:text-[12px] px-3 md:px-2.5 py-2.5 md:py-1.5 pr-8 rounded-md truncate transition-colors"
+                      className="w-full text-left text-[13px] md:text-[12px] px-3 md:px-2.5 py-2.5 md:py-1.5 pr-8 rounded-md truncate transition-colors hover:bg-foreground/[0.05]"
                       style={{
                         background: s.id === currentSessionId ? 'hsl(var(--foreground) / 0.05)' : 'transparent',
                         color: s.id === currentSessionId ? 'hsl(var(--foreground))' : 'hsl(var(--muted-foreground))',
@@ -255,7 +275,7 @@ export function AppLayout({ children, inputBar, sidebarSection }: AppLayoutProps
                       {initialsOf(displayName, user?.email)}
                     </div>
                   )}
-                  <div className="min-w-0 flex-1">
+                  {!collapsed && <div className="min-w-0 flex-1">
                     <div className="text-[12px] font-medium text-foreground truncate leading-tight">
                       {displayName || 'Account'}
                     </div>
@@ -264,7 +284,7 @@ export function AppLayout({ children, inputBar, sidebarSection }: AppLayoutProps
                         {user.email}
                       </div>
                     )}
-                  </div>
+                  </div>}
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent side="top" align="start" className="w-56">

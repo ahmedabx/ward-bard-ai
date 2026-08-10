@@ -61,15 +61,22 @@ export default function Chat() {
   const activeMode = STUDY_MODES.find((m) => m.value === mode) ?? STUDY_MODES[1];
   const activeSpecialty = SPECIALTIES.find((s) => s.value === specialty) ?? SPECIALTIES[0];
 
+  const SUGGESTIONS = [
+    'Management of septic shock',
+    'Interpret this ABG: pH 7.28, pCO₂ 58',
+    'DKA vs HHS — key differences',
+    'First-line therapy in new AF',
+  ];
+
   const composer = (
     <div>
-      <div className="px-4 md:px-5 pt-3 md:pt-4 flex justify-center">
-        <div className="max-w-3xl w-full flex items-center gap-2">
+      <div className="px-4 md:px-6 pt-3 flex justify-center">
+        <div className="chat-column flex items-center gap-2">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
-                className="flex items-center gap-1.5 rounded-md px-3 md:px-2.5 h-8 md:h-7 text-[12px] md:text-[11px] font-medium text-foreground transition-colors hover:bg-muted/30"
-                style={{ border: HAIRLINE, background: 'hsl(var(--surface-rail) / 0.5)' }}
+                className="flex items-center gap-1.5 rounded-md px-3 md:px-2.5 h-8 md:h-7 text-[12px] md:text-[11px] font-medium text-foreground transition-colors hover:bg-foreground/[0.05]"
+                style={{ border: HAIRLINE, background: 'transparent' }}
                 aria-label="Study mode"
               >
                 {activeMode.label}
@@ -95,8 +102,8 @@ export default function Chat() {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
-                className="flex items-center gap-1.5 rounded-md px-3 md:px-2.5 h-8 md:h-7 text-[12px] md:text-[11px] font-medium text-foreground transition-colors hover:bg-muted/30"
-                style={{ border: HAIRLINE, background: 'hsl(var(--surface-rail) / 0.5)' }}
+                className="flex items-center gap-1.5 rounded-md px-3 md:px-2.5 h-8 md:h-7 text-[12px] md:text-[11px] font-medium text-foreground transition-colors hover:bg-foreground/[0.05]"
+                style={{ border: HAIRLINE, background: 'transparent' }}
                 aria-label="Specialty focus"
               >
                 {activeSpecialty.label}
@@ -116,28 +123,38 @@ export default function Chat() {
               ))}
             </DropdownMenuContent>
           </DropdownMenu>
-          <span className="hidden sm:inline text-[10.5px] text-muted-foreground">Applies to this chat</span>
+          <span className="hidden sm:inline text-[10.5px] text-muted-foreground/70">Applies to this chat</span>
         </div>
       </div>
 
       <ChatInput onSend={(t) => sendMessage(t, mode, specialty)} isLoading={isLoading} autoFocus />
-
     </div>
   );
 
   return (
     <AppLayout inputBar={composer}>
-
-      <div className="px-4 md:px-6 py-5 md:py-6">
-        <div className="max-w-3xl mx-auto">
+      <div className="px-4 md:px-6 py-6 md:py-10">
+        <div className="chat-column">
           {messages.length === 0 && !isLoading && (
-            <div className="animate-fade-in py-16 md:py-24 text-center">
-              <h1 className="font-serif-display text-2xl md:text-3xl text-foreground">
+            <div className="animate-fade-in py-14 md:py-24 text-center">
+              <h1 className="font-serif-display text-[26px] md:text-[32px] text-foreground">
                 {firstName ? `Hi there, Dr. ${firstName}` : 'Hi there, Doctor'}
               </h1>
-              <p className="mt-2 text-sm text-muted-foreground">
+              <p className="mt-2 text-[13.5px] text-muted-foreground">
                 Ask anything — mechanisms, management, or guidelines.
               </p>
+              <div className="mt-7 flex flex-wrap justify-center gap-2">
+                {SUGGESTIONS.map((s) => (
+                  <button
+                    key={s}
+                    onClick={() => sendMessage(s, mode, specialty)}
+                    className="rounded-md px-3 min-h-[32px] text-[12.5px] text-muted-foreground hover:text-foreground hover:bg-foreground/[0.05] transition-colors"
+                    style={{ border: HAIRLINE }}
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
             </div>
           )}
           {messages.map((msg, i) => {
@@ -153,12 +170,10 @@ export default function Chat() {
             );
           })}
           {isLoading && messages[messages.length - 1]?.role !== 'assistant' && (
-            <div className="flex justify-start mb-5 md:mb-4">
-              <div className="glass-card p-4 space-y-2 w-64 max-w-full">
-                <div className="h-3 bg-muted/50 rounded shimmer w-3/4" />
-                <div className="h-3 bg-muted/50 rounded shimmer w-full" />
-                <div className="h-3 bg-muted/50 rounded shimmer w-1/2" />
-              </div>
+            <div className="mb-10 space-y-2.5" aria-label="Generating response">
+              <div className="h-2.5 rounded-full bg-foreground/[0.07] evidence-pulse w-2/3" />
+              <div className="h-2.5 rounded-full bg-foreground/[0.07] evidence-pulse w-full" style={{ animationDelay: '120ms' }} />
+              <div className="h-2.5 rounded-full bg-foreground/[0.07] evidence-pulse w-5/6" style={{ animationDelay: '240ms' }} />
             </div>
           )}
           <div ref={messagesEndRef} />
@@ -167,3 +182,4 @@ export default function Chat() {
     </AppLayout>
   );
 }
+

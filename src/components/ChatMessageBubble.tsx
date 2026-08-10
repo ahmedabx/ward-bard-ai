@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import { Copy, Bookmark, ThumbsUp, ThumbsDown, Check } from 'lucide-react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import type { ChatMessage } from '@/hooks/use-chat';
 import { AssistantConfidence } from '@/components/AssistantConfidence';
@@ -12,11 +12,22 @@ interface ChatMessageBubbleProps {
   isStreaming?: boolean;
 }
 
+/** Turn bare `[1]` citation markers into markdown links pointing at the source card. */
+function linkifyCitations(text: string, anchorPrefix: string) {
+  return text.replace(/(?<!\])\[(\d{1,2})\](?!\()/g, (_m, n) => `[\\[${n}\\]](#${anchorPrefix}-src-${n})`);
+}
+
 export function ChatMessageBubble({ message, onSave, previousUserMessage, isStreaming }: ChatMessageBubbleProps) {
   const [copied, setCopied] = useState(false);
   const [saved, setSaved] = useState(false);
   const [feedback, setFeedback] = useState<'up' | 'down' | null>(null);
   const isUser = message.role === 'user';
+  const anchorPrefix = `m-${message.id}`;
+
+  const body = useMemo(
+    () => (isUser ? message.content : linkifyCitations(message.content, anchorPrefix)),
+    [message.content, isUser, anchorPrefix],
+  );
 
   const handleCopy = () => {
     navigator.clipboard.writeText(message.content);
@@ -35,13 +46,21 @@ export function ChatMessageBubble({ message, onSave, previousUserMessage, isStre
   if (isUser) {
     return (
       <motion.div
-        className="flex justify-end mb-4 md:mb-3"
-        initial={{ opacity: 0, y: 8 }}
+        className="flex justify-end mb-5"
+        initial={{ opacity: 0, y: 6 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.15 }}
       >
-        <div className="max-w-[88%] md:max-w-[70%] px-4 py-3 md:py-2.5 bg-primary/20 border border-primary/20 rounded-2xl rounded-br-md">
-          <p className="text-base md:text-sm text-foreground leading-relaxed">{message.content}</p>
+        <div
+          className="max-w-[88%] md:max-w-[75%] px-3.5 py-2.5 rounded-lg"
+          style={{
+            background: 'hsl(var(--foreground) / 0.05)',
+            border: '0.5px solid hsl(var(--hairline) / var(--hairline-alpha))',
+          }}
+        >
+          <p className="text-[15px] text-foreground leading-relaxed whitespace-pre-wrap">
+            {message.content}
+          </p>
         </div>
       </motion.div>
     );
@@ -49,79 +68,119 @@ export function ChatMessageBubble({ message, onSave, previousUserMessage, isStre
 
   return (
     <motion.div
-      className="flex justify-start mb-6 md:mb-4"
+      className="mb-10"
       initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.35, ease: [0.25, 0.46, 0.45, 0.94] }}
+      transition={{ duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
     >
-      <div className="w-full md:max-w-[80%]">
-        <div className="glass-card p-4 md:p-6 border border-primary/10 relative group transition-all duration-300">
-          <div className="ward-bard-response prose prose-invert max-w-none text-[1rem] md:text-[0.9rem] leading-[1.7] md:leading-[1.8] font-['Inter',sans-serif]">
-            <ReactMarkdown
-              components={{
-                h1: ({ children }) => <h1 className="text-lg font-semibold font-['Plus_Jakarta_Sans',sans-serif] text-foreground mt-0 mb-3">{children}</h1>,
-                h2: ({ children }) => <h2 className="text-base font-semibold font-['Plus_Jakarta_Sans',sans-serif] text-foreground mt-5 mb-2">{children}</h2>,
-                h3: ({ children }) => <h3 className="text-sm font-semibold font-['Plus_Jakarta_Sans',sans-serif] text-foreground mt-4 mb-2">{children}</h3>,
-                p: ({ children }) => <p className="text-muted-foreground mb-3 last:mb-0">{children}</p>,
-                ul: ({ children }) => <ul className="space-y-1.5 mb-3 pl-1">{children}</ul>,
-                ol: ({ children }) => <ol className="space-y-1.5 mb-3 pl-1 list-decimal list-inside">{children}</ol>,
-                li: ({ children }) => <li className="text-muted-foreground leading-relaxed flex gap-2"><span className="text-primary mt-0.5 shrink-0">•</span><span>{children}</span></li>,
-                strong: ({ children }) => <strong className="text-foreground font-semibold">{children}</strong>,
-                em: ({ children }) => <em className="text-primary/80">{children}</em>,
-                blockquote: ({ children }) => <blockquote className="border-l-2 border-primary/40 pl-4 my-3 text-muted-foreground/80 italic">{children}</blockquote>,
-                code: ({ children, className }) => {
-                  const isBlock = className?.includes('language-');
-                  if (isBlock) return <code className={`block bg-card/50 rounded-lg p-3 my-3 text-xs font-mono overflow-x-auto ${className}`}>{children}</code>;
-                  return <code className="bg-primary/10 text-primary px-1.5 py-0.5 rounded text-xs font-mono">{children}</code>;
-                },
-                hr: () => <hr className="border-border/30 my-4" />,
-              }}
-            >{message.content}</ReactMarkdown>
-          </div>
-
-          {previousUserMessage && message.content.length > 10 && (
-            <AssistantConfidence
-              query={previousUserMessage}
-              answer={message.content}
-              isStreaming={isStreaming}
-            />
-          )}
-
-          {/* Educational-use notice */}
-          {message.content.length > 10 && (
-            <p className="mt-3 text-[10px] text-muted-foreground/70">
-              For medical education and exam preparation only. Not for real-world patient-care decisions.
-            </p>
-          )}
-
-          {/* Actions */}
-          {message.content.length > 10 && (
-            <div className="flex items-center gap-1 mt-3 pt-2 border-t border-border/30">
-              <button onClick={handleCopy} className="p-2.5 md:p-1.5 text-muted-foreground hover:text-foreground transition-all duration-150 hover:scale-110">
-                {copied ? <Check size={16} className="text-primary" /> : <Copy size={16} />}
-              </button>
-              <button
-                onClick={handleSave}
-                className={`p-2.5 md:p-1.5 transition-all duration-150 hover:scale-110 ${saved ? 'text-yellow-400' : 'text-muted-foreground hover:text-foreground'}`}
-              >
-                {saved ? <Check size={16} /> : <Bookmark size={16} />}
-              </button>
-              <button
-                onClick={() => setFeedback('up')}
-                className={`p-2.5 md:p-1.5 transition-all duration-150 hover:scale-110 ${feedback === 'up' ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}
-              >
-                <ThumbsUp size={16} />
-              </button>
-              <button
-                onClick={() => setFeedback('down')}
-                className={`p-2.5 md:p-1.5 transition-all duration-150 hover:scale-110 ${feedback === 'down' ? 'text-destructive' : 'text-muted-foreground hover:text-foreground'}`}
-              >
-                <ThumbsDown size={16} />
-              </button>
-            </div>
-          )}
-        </div>
+      <div className="ward-bard-response max-w-none text-[15px] leading-[1.7] text-foreground/85">
+        <ReactMarkdown
+          components={{
+            h1: ({ children }) => <h1 className="text-[19px] font-semibold text-foreground mt-0 mb-3">{children}</h1>,
+            h2: ({ children }) => <h2 className="text-[16px] font-semibold text-foreground mt-7 mb-2.5">{children}</h2>,
+            h3: ({ children }) => <h3 className="text-[14px] font-semibold text-foreground/90 mt-5 mb-2 uppercase tracking-[0.06em]">{children}</h3>,
+            p: ({ children }) => <p className="mb-4 last:mb-0 leading-[1.7]">{children}</p>,
+            ul: ({ children }) => <ul className="space-y-1 mb-4">{children}</ul>,
+            ol: ({ children }) => <ol className="space-y-1 mb-4 list-decimal pl-5">{children}</ol>,
+            li: ({ children }) => <li className="leading-[1.65] marker:text-primary/60">{children}</li>,
+            strong: ({ children }) => <strong className="text-foreground font-semibold">{children}</strong>,
+            em: ({ children }) => <em className="text-foreground/80">{children}</em>,
+            a: ({ children, href }) => {
+              const isCitation = typeof href === 'string' && href.includes('-src-');
+              if (isCitation) {
+                return (
+                  <a
+                    href={href}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      const el = document.querySelector(href!);
+                      el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                      (el as HTMLElement | null)?.classList.add('source-flash');
+                      setTimeout(() => (el as HTMLElement | null)?.classList.remove('source-flash'), 1200);
+                    }}
+                    className="citation-chip"
+                  >
+                    {children}
+                  </a>
+                );
+              }
+              return (
+                <a
+                  href={href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary underline underline-offset-2 decoration-primary/40 hover:decoration-primary"
+                >
+                  {children}
+                </a>
+              );
+            },
+            blockquote: ({ children }) => (
+              <blockquote className="border-l-2 border-primary/40 pl-4 my-4 text-muted-foreground">{children}</blockquote>
+            ),
+            code: ({ children, className }) => {
+              const isBlock = className?.includes('language-');
+              if (isBlock) {
+                return (
+                  <code className={`block bg-card rounded-md p-3 my-4 text-[12.5px] font-mono overflow-x-auto ${className}`}>
+                    {children}
+                  </code>
+                );
+              }
+              return (
+                <code className="font-mono text-[13px] text-foreground bg-foreground/[0.06] px-1.5 py-0.5 rounded">
+                  {children}
+                </code>
+              );
+            },
+            hr: () => <hr className="border-0 my-6" style={{ borderTop: '0.5px solid hsl(var(--hairline) / var(--hairline-alpha))' }} />,
+          }}
+        >{body}</ReactMarkdown>
       </div>
+
+      {previousUserMessage && message.content.length > 10 && (
+        <AssistantConfidence
+          query={previousUserMessage}
+          answer={message.content}
+          isStreaming={isStreaming}
+          anchorPrefix={anchorPrefix}
+        />
+      )}
+
+      {message.content.length > 10 && (
+        <p className="mt-3 text-[10px] text-muted-foreground/60">
+          For medical education and exam preparation only. Not for real-world patient-care decisions.
+        </p>
+      )}
+
+      {message.content.length > 10 && (
+        <div className="flex items-center gap-0.5 mt-2">
+          <button onClick={handleCopy} aria-label="Copy response" className="p-2 rounded-md text-muted-foreground/70 hover:text-foreground hover:bg-foreground/[0.05]">
+            {copied ? <Check size={15} className="text-primary" /> : <Copy size={15} />}
+          </button>
+          <button
+            onClick={handleSave}
+            aria-label="Save response"
+            className={`p-2 rounded-md hover:bg-foreground/[0.05] ${saved ? 'text-primary' : 'text-muted-foreground/70 hover:text-foreground'}`}
+          >
+            {saved ? <Check size={15} /> : <Bookmark size={15} />}
+          </button>
+          <button
+            onClick={() => setFeedback('up')}
+            aria-label="Helpful"
+            className={`p-2 rounded-md hover:bg-foreground/[0.05] ${feedback === 'up' ? 'text-primary' : 'text-muted-foreground/70 hover:text-foreground'}`}
+          >
+            <ThumbsUp size={15} />
+          </button>
+          <button
+            onClick={() => setFeedback('down')}
+            aria-label="Not helpful"
+            className={`p-2 rounded-md hover:bg-foreground/[0.05] ${feedback === 'down' ? 'text-destructive' : 'text-muted-foreground/70 hover:text-foreground'}`}
+          >
+            <ThumbsDown size={15} />
+          </button>
+        </div>
+      )}
     </motion.div>
   );
 }

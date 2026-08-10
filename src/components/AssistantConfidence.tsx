@@ -1,6 +1,5 @@
-import { useEffect, useState, useMemo, useId } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown, ShieldCheck, ShieldAlert, Shield } from 'lucide-react';
+import { useEffect, useState, useMemo } from 'react';
+import { ShieldCheck, ShieldAlert, Shield, ExternalLink } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { assessConfidence, type RawSource, type ConfidenceLevel } from '@/lib/confidence';
 
@@ -8,6 +7,8 @@ interface Props {
   query: string;
   answer: string;
   isStreaming?: boolean;
+  /** Prefix used to build stable anchor ids so inline [n] chips can jump here. */
+  anchorPrefix: string;
 }
 
 interface Retrieval {
@@ -39,12 +40,31 @@ const levelStyles: Record<ConfidenceLevel, { color: string; Icon: typeof Shield 
   low:      { color: 'text-muted-foreground/70',     Icon: ShieldAlert },
 };
 
-export function AssistantConfidence({ query, answer, isStreaming }: Props) {
+const HAIRLINE = '0.5px solid hsl(var(--hairline) / var(--hairline-alpha))';
+
+function SourceSkeleton() {
+  return (
+    <div className="mt-4 space-y-2" aria-hidden>
+      {[0, 1, 2].map((i) => (
+        <div key={i} className="rounded-md px-3 py-2.5" style={{ border: HAIRLINE }}>
+          <div
+            className="h-2 rounded-full bg-primary/25 evidence-pulse"
+            style={{ width: `${72 - i * 12}%`, animationDelay: `${i * 120}ms` }}
+          />
+          <div
+            className="mt-2 h-1.5 rounded-full bg-primary/15 evidence-pulse"
+            style={{ width: '38%', animationDelay: `${i * 120 + 60}ms` }}
+          />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export function AssistantConfidence({ query, answer, isStreaming, anchorPrefix }: Props) {
   const [sources, setSources] = useState<RawSource[]>([]);
   const [failed, setFailed] = useState(false);
   const [ready, setReady] = useState(false);
-  const [open, setOpen] = useState(false);
-  const panelId = useId();
 
   useEffect(() => {
     let cancelled = false;
@@ -69,85 +89,82 @@ export function AssistantConfidence({ query, answer, isStreaming }: Props) {
     [query, answer, sources],
   );
 
-  // Wait until streaming stops and retrieval resolves before rendering
-  // anything — a flickering confidence tag would be worse than none.
-  if (isStreaming || !ready || answer.trim().length < 20) return null;
+  if (isStreaming || answer.trim().length < 20) return null;
+
+  if (!ready) {
+    return (
+      <div className="mt-6 pt-4" style={{ borderTop: HAIRLINE }}>
+        <span className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground/70">
+          Retrieving sources
+        </span>
+        <SourceSkeleton />
+      </div>
+    );
+  }
 
   const { level, label, relevantSources } = assessment;
   const { color, Icon } = levelStyles[level];
   const hasCitations = relevantSources.length > 0;
 
   return (
-    <div className="mt-4 pt-3 border-t border-border/30">
+    <div className="mt-6 pt-4" style={{ borderTop: HAIRLINE }}>
       <div className="flex items-center gap-3 flex-wrap">
-        <span className={`inline-flex items-center gap-1.5 text-[10px] uppercase tracking-wider ${color}`}>
+        <span className={`inline-flex items-center gap-1.5 text-[10px] uppercase tracking-[0.14em] ${color}`}>
           <Icon size={11} strokeWidth={2} />
           {label}
         </span>
-
-        {!hasCitations && (
-          <span className="text-[10px] text-muted-foreground/70">
-            {failed
-              ? 'Evidence lookup unavailable — answer based on general medical knowledge'
-              : 'No current guideline found — answer based on general medical knowledge'}
-          </span>
-        )}
-
         {hasCitations && (
-          <button
-            type="button"
-            onClick={() => setOpen((o) => !o)}
-            aria-expanded={open}
-            aria-controls={panelId}
-            className="inline-flex items-center gap-1 min-h-[24px] text-[10px] uppercase tracking-wider text-muted-foreground/70 hover:text-foreground transition-colors duration-150 rounded-sm focus:outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-          >
-            {open ? 'Hide citations' : `View citations (${relevantSources.length})`}
-            <ChevronDown
-              size={11}
-              aria-hidden="true"
-              className={`transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
-            />
-          </button>
+          <span className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground/60">
+            {relevantSources.length} source{relevantSources.length === 1 ? '' : 's'}
+          </span>
         )}
       </div>
 
-      <AnimatePresence initial={false}>
-        {open && hasCitations && (
-          <motion.ul
-            key="citations"
-            id={panelId}
-            aria-label="PubMed citations for this response"
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.18 }}
-            className="mt-3 space-y-2 pl-1 overflow-hidden"
-          >
-            {relevantSources.map((r) => (
-              <li key={r.pmid} className="text-muted-foreground/90 leading-relaxed flex gap-2">
-                <span aria-hidden="true" className="text-primary/60 mt-0.5 shrink-0 text-[10px]">•</span>
-                <span className="flex-1">
-                  <a
-                    href={r.url || `https://pubmed.ncbi.nlm.nih.gov/${r.pmid}/`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-label={`View source: ${r.title} on PubMed (opens in a new tab)`}
-                    className="inline-block text-[12px] text-foreground/90 underline decoration-transparent underline-offset-2 hover:text-primary hover:decoration-primary focus:outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background rounded-sm transition-colors duration-150"
-                  >
+      {!hasCitations && (
+        <p className="mt-2 text-[11.5px] text-muted-foreground/70 leading-relaxed">
+          {failed
+            ? 'Evidence lookup unavailable — this answer draws on general medical knowledge.'
+            : 'No current guideline matched this query — this answer draws on general medical knowledge.'}
+        </p>
+      )}
+
+      {hasCitations && (
+        <ol className="mt-3 space-y-1.5" aria-label="Sources for this response">
+          {relevantSources.map((r, i) => (
+            <li key={r.pmid}>
+              <a
+                id={`${anchorPrefix}-src-${i + 1}`}
+                href={r.url || `https://pubmed.ncbi.nlm.nih.gov/${r.pmid}/`}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={`Source ${i + 1}: ${r.title} on PubMed (opens in a new tab)`}
+                className="source-card group flex gap-3 rounded-md px-3 py-2.5 min-h-[44px] items-start no-underline focus:outline-none focus-visible:ring-1 focus-visible:ring-primary"
+                style={{ border: HAIRLINE, borderLeft: '2px solid transparent' }}
+              >
+                <span className="mt-[1px] text-[10px] tabular-nums text-primary/80 shrink-0 w-4">
+                  {i + 1}
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-[12.5px] leading-snug text-foreground/90 group-hover:text-foreground">
                     {r.title}
-                  </a>
-                  <span className="block text-[10px] text-muted-foreground/70 mt-0.5">
-                    {r.authorLine}
-                    {r.journal && <> · <span className="italic">{r.journal}</span></>}
-                    {r.year && <> · {r.year}</>}
+                  </span>
+                  <span className="mt-1 block text-[10.5px] text-muted-foreground/70">
+                    {r.journal && <span className="italic">{r.journal}</span>}
+                    {r.journal && r.year ? ' · ' : ''}
+                    {r.year}
                     <span className="ml-1 text-muted-foreground/50">· PubMed</span>
                   </span>
                 </span>
-              </li>
-            ))}
-          </motion.ul>
-        )}
-      </AnimatePresence>
+                <ExternalLink
+                  size={12}
+                  aria-hidden
+                  className="mt-0.5 shrink-0 text-muted-foreground/40 group-hover:text-primary"
+                />
+              </a>
+            </li>
+          ))}
+        </ol>
+      )}
     </div>
   );
 }

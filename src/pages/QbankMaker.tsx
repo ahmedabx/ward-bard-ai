@@ -115,6 +115,8 @@ export default function QbankMaker() {
     setPhase(row.completed ? 'summary' : 'quiz');
   }, []);
 
+  const { remaining, limit, consume } = useDailyUsage('qbank', 40);
+
   const reset = () => {
     setPhase('setup');
     setQuizId(null);

@@ -1,8 +1,10 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { AppLayout } from '@/components/AppLayout';
 import { ChatMessageBubble } from '@/components/ChatMessageBubble';
 import { ChatInput } from '@/components/ChatInput';
+import { UsageBadge } from '@/components/UsageBadge';
+import { useDailyUsage } from '@/hooks/use-daily-usage';
 import { useChatContext } from '@/contexts/ChatContext';
 import { useStudyMode, STUDY_MODES, SPECIALTIES } from '@/contexts/ModeContext';
 import { ChevronDown, Check } from 'lucide-react';
@@ -14,6 +16,8 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 
+const DAILY_QUERY_LIMIT = 7;
+
 export default function Chat() {
   const [searchParams, setSearchParams] = useSearchParams();
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -22,15 +26,27 @@ export default function Chat() {
   const { currentSession, sendMessage, isLoading } = chat;
   const { mode, setMode, specialty, setSpecialty } = useStudyMode();
 
+  const { remaining, limit, limitReached, consume } = useDailyUsage('assistant', DAILY_QUERY_LIMIT);
+
+  const send = useCallback(
+    (text: string) => {
+      if (limitReached || isLoading) return;
+      consume(1);
+      sendMessage(text, mode, specialty);
+    },
+    [limitReached, isLoading, consume, sendMessage, mode, specialty],
+  );
+
   const initialQuery = searchParams.get('q') || '';
 
   useEffect(() => {
     if (initialQuery && !currentSession) {
-      sendMessage(initialQuery, mode, specialty);
+      send(initialQuery);
       setSearchParams({});
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialQuery]);
+
 
   useEffect(() => {
     const msgs = currentSession?.messages || [];

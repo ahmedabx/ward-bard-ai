@@ -26,6 +26,8 @@ interface AppLayoutProps {
   inputBar?: ReactNode;
   /** Per-page history panel rendered in the left rail (My Patient, Qbank Maker). */
   sidebarSection?: ReactNode;
+  /** Small status content rendered at the right end of the topbar (e.g. usage badge). */
+  topbarRight?: ReactNode;
 }
 
 /** Shared rail history panel shell so every tab's history looks the same. */
@@ -94,7 +96,7 @@ function initialsOf(name?: string | null, email?: string | null) {
   return ((parts[0]?.[0] || '') + (parts[1]?.[0] || '')).toUpperCase() || 'U';
 }
 
-export function AppLayout({ children, inputBar, sidebarSection }: AppLayoutProps) {
+export function AppLayout({ children, inputBar, sidebarSection, topbarRight }: AppLayoutProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const isAssistant = location.pathname === '/chat' || location.pathname === '/';
@@ -324,6 +326,7 @@ export function AppLayout({ children, inputBar, sidebarSection }: AppLayoutProps
               </div>
             </div>
             <div className="flex items-center gap-3 pb-2 md:pb-0 md:py-0 w-full md:w-auto justify-between md:justify-end">
+              {topbarRight}
               <Tooltip>
                 <TooltipTrigger asChild>
                   <span className="hidden md:inline text-[10.5px] text-muted-foreground cursor-default">

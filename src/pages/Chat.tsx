@@ -1,8 +1,10 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { AppLayout } from '@/components/AppLayout';
 import { ChatMessageBubble } from '@/components/ChatMessageBubble';
 import { ChatInput } from '@/components/ChatInput';
+import { UsageBadge } from '@/components/UsageBadge';
+import { useDailyUsage } from '@/hooks/use-daily-usage';
 import { useChatContext } from '@/contexts/ChatContext';
 import { useStudyMode, STUDY_MODES, SPECIALTIES } from '@/contexts/ModeContext';
 import { ChevronDown, Check } from 'lucide-react';
@@ -14,6 +16,8 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 
+const DAILY_QUERY_LIMIT = 7;
+
 export default function Chat() {
   const [searchParams, setSearchParams] = useSearchParams();
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -22,15 +26,27 @@ export default function Chat() {
   const { currentSession, sendMessage, isLoading } = chat;
   const { mode, setMode, specialty, setSpecialty } = useStudyMode();
 
+  const { remaining, limit, limitReached, consume } = useDailyUsage('assistant', DAILY_QUERY_LIMIT);
+
+  const send = useCallback(
+    (text: string) => {
+      if (limitReached || isLoading) return;
+      consume(1);
+      sendMessage(text, mode, specialty);
+    },
+    [limitReached, isLoading, consume, sendMessage, mode, specialty],
+  );
+
   const initialQuery = searchParams.get('q') || '';
 
   useEffect(() => {
     if (initialQuery && !currentSession) {
-      sendMessage(initialQuery, mode, specialty);
+      send(initialQuery);
       setSearchParams({});
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialQuery]);
+
 
   useEffect(() => {
     const msgs = currentSession?.messages || [];
@@ -127,12 +143,22 @@ export default function Chat() {
         </div>
       </div>
 
-      <ChatInput onSend={(t) => sendMessage(t, mode, specialty)} isLoading={isLoading} autoFocus />
+      <ChatInput
+        onSend={send}
+        isLoading={isLoading}
+        autoFocus
+        disabled={limitReached}
+        disabledMessage="You've used all 7 queries for today. Come back tomorrow for more."
+      />
     </div>
   );
 
   return (
-    <AppLayout inputBar={composer}>
+    <AppLayout
+      inputBar={composer}
+      topbarRight={<UsageBadge label="Queries remaining:" remaining={remaining} limit={limit} />}
+    >
+
       <div className="px-4 md:px-6 py-6 md:py-10">
         <div className="chat-column">
           {messages.length === 0 && !isLoading && (
@@ -147,13 +173,15 @@ export default function Chat() {
                 {SUGGESTIONS.map((s) => (
                   <button
                     key={s}
-                    onClick={() => sendMessage(s, mode, specialty)}
-                    className="rounded-md px-3 min-h-[32px] text-[12.5px] text-muted-foreground hover:text-foreground hover:bg-foreground/[0.05] transition-colors"
+                    onClick={() => send(s)}
+                    disabled={limitReached}
+                    className="rounded-md px-3 min-h-[32px] text-[12.5px] text-muted-foreground hover:text-foreground hover:bg-foreground/[0.05] transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
                     style={{ border: HAIRLINE }}
                   >
                     {s}
                   </button>
                 ))}
+
               </div>
             </div>
           )}

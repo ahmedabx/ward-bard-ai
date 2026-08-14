@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Loader2, FileQuestion, RotateCcw, CheckCircle2, XCircle, ArrowRight, Sparkles } from 'lucide-react';
+import { UsageBadge } from '@/components/UsageBadge';
+import { useDailyUsage } from '@/hooks/use-daily-usage';
 import { AppLayout, RailHistory, RailItem } from '@/components/AppLayout';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -113,6 +115,8 @@ export default function QbankMaker() {
     setPhase(row.completed ? 'summary' : 'quiz');
   }, []);
 
+  const { remaining, limit, consume } = useDailyUsage('qbank', 40);
+
   const reset = () => {
     setPhase('setup');
     setQuizId(null);
@@ -126,6 +130,8 @@ export default function QbankMaker() {
   const generate = async () => {
     const t = topic.trim();
     if (t.length < 2) { setError('Enter a topic.'); return; }
+    if (remaining < count) { setError('Daily question limit reached. Come back tomorrow for more.'); return; }
+    consume(count);
     setLoading(true);
     setError(null);
     try {
@@ -228,7 +234,10 @@ export default function QbankMaker() {
   );
 
   return (
-    <AppLayout sidebarSection={historySidebar}>
+    <AppLayout
+      sidebarSection={historySidebar}
+      topbarRight={<UsageBadge label="Questions remaining:" remaining={remaining} limit={limit} />}
+    >
       <div className="px-4 py-6">
         <div className="max-w-2xl mx-auto">
           {phase === 'setup' && (
@@ -239,6 +248,7 @@ export default function QbankMaker() {
               mode={mode} setMode={setMode}
               loading={loading} error={error}
               onGenerate={generate}
+              remaining={remaining}
             />
           )}
 
@@ -272,8 +282,11 @@ function SetupView(props: {
   mode: Mode; setMode: (m: Mode) => void;
   loading: boolean; error: string | null;
   onGenerate: () => void;
+  remaining: number;
 }) {
-  const { topic, setTopic, count, setCount, difficulty, setDifficulty, mode, setMode, loading, error, onGenerate } = props;
+  const { topic, setTopic, count, setCount, difficulty, setDifficulty, mode, setMode, loading, error, onGenerate, remaining } = props;
+  const outOfQuota = remaining <= 0;
+  const notEnoughQuota = !outOfQuota && remaining < count;
 
   return (
     <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}>
@@ -382,10 +395,18 @@ function SetupView(props: {
           </div>
         )}
 
+        {(outOfQuota || notEnoughQuota) && (
+          <p className="text-[12px] text-muted-foreground">
+            {outOfQuota
+              ? "You've used all 40 questions for today. Come back tomorrow for more."
+              : `Only ${remaining} question${remaining === 1 ? '' : 's'} left today — lower the count or come back tomorrow.`}
+          </p>
+        )}
+
         <button
-          disabled={loading || topic.trim().length < 2}
+          disabled={loading || topic.trim().length < 2 || outOfQuota || notEnoughQuota}
           onClick={onGenerate}
-          className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium disabled:opacity-40 hover:opacity-90 transition"
+          className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-90 transition"
         >
           {loading ? <><Loader2 size={14} className="animate-spin" /> Generating…</> : <><Sparkles size={14} /> Generate quiz</>}
         </button>

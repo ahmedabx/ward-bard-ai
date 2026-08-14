@@ -173,13 +173,15 @@ export default function Chat() {
                 {SUGGESTIONS.map((s) => (
                   <button
                     key={s}
-                    onClick={() => sendMessage(s, mode, specialty)}
-                    className="rounded-md px-3 min-h-[32px] text-[12.5px] text-muted-foreground hover:text-foreground hover:bg-foreground/[0.05] transition-colors"
+                    onClick={() => send(s)}
+                    disabled={limitReached}
+                    className="rounded-md px-3 min-h-[32px] text-[12.5px] text-muted-foreground hover:text-foreground hover:bg-foreground/[0.05] transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
                     style={{ border: HAIRLINE }}
                   >
                     {s}
                   </button>
                 ))}
+
               </div>
             </div>
           )}

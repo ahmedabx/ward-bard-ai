@@ -6,11 +6,13 @@ interface ChatInputProps {
   isLoading: boolean;
   initialValue?: string;
   autoFocus?: boolean;
+  disabled?: boolean;
+  disabledMessage?: string;
 }
 
 const HAIRLINE = '0.5px solid hsl(var(--hairline) / var(--hairline-alpha))';
 
-export function ChatInput({ onSend, isLoading, initialValue, autoFocus }: ChatInputProps) {
+export function ChatInput({ onSend, isLoading, initialValue, autoFocus, disabled, disabledMessage }: ChatInputProps) {
   const [value, setValue] = useState(initialValue || '');
   const [focused, setFocused] = useState(false);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -19,11 +21,12 @@ export function ChatInput({ onSend, isLoading, initialValue, autoFocus }: ChatIn
 
   const handleSend = () => {
     const trimmed = value.trim();
-    if (!trimmed || isLoading) return;
+    if (!trimmed || isLoading || disabled) return;
     onSend(trimmed);
     setValue('');
     inputRef.current?.focus();
   };
+
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {

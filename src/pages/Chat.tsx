@@ -143,12 +143,22 @@ export default function Chat() {
         </div>
       </div>
 
-      <ChatInput onSend={(t) => sendMessage(t, mode, specialty)} isLoading={isLoading} autoFocus />
+      <ChatInput
+        onSend={send}
+        isLoading={isLoading}
+        autoFocus
+        disabled={limitReached}
+        disabledMessage="You've used all 7 queries for today. Come back tomorrow for more."
+      />
     </div>
   );
 
   return (
-    <AppLayout inputBar={composer}>
+    <AppLayout
+      inputBar={composer}
+      topbarRight={<UsageBadge label="Queries remaining:" remaining={remaining} limit={limit} />}
+    >
+
       <div className="px-4 md:px-6 py-6 md:py-10">
         <div className="chat-column">
           {messages.length === 0 && !isLoading && (

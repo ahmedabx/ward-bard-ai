@@ -46,8 +46,8 @@ Deno.serve(async (req) => {
       );
     }
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) return jsonResponse(req, GENERIC_ERROR, 500);
+    const GROQ_API_KEY = Deno.env.get("GROQ_API_KEY");
+    if (!GROQ_API_KEY) return jsonResponse(req, GENERIC_ERROR, 500);
 
     const body = (await req.json().catch(() => null)) as Body | null;
     if (!body) return jsonResponse(req, { error: "Invalid request" }, 400);

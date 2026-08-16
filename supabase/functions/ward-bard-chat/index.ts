@@ -69,9 +69,9 @@ serve(async (req) => {
       messages.push({ role, content: safe });
     }
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      console.error("LOVABLE_API_KEY missing");
+    const GROQ_API_KEY = Deno.env.get("GROQ_API_KEY");
+    if (!GROQ_API_KEY) {
+      console.error("GROQ_API_KEY missing");
       return jsonResponse(req, GENERIC_ERROR, 500);
     }
 

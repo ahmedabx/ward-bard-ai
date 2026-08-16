@@ -1,5 +1,5 @@
 // Qbank Maker — generates a set of exam-style MCQs on a topic.
-// Uses Lovable AI Gateway (google/gemini-3-flash-preview) with strict JSON output.
+// Uses Groq (llama-3.3-70b-versatile) with strict JSON output.
 
 import {
   preflight,
@@ -78,14 +78,14 @@ ${mode === "preclinical"
         : "Emphasize clinical reasoning, diagnosis, and management aligned with current guidelines."}
 Generate exactly ${count} MCQs.`;
 
-    const upstream = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const upstream = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        Authorization: `Bearer ${GROQ_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: "llama-3.3-70b-versatile",
         messages: [
           { role: "system", content: SYSTEM },
           { role: "user", content: userMsg },

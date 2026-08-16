@@ -69,9 +69,9 @@ serve(async (req) => {
       messages.push({ role, content: safe });
     }
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      console.error("LOVABLE_API_KEY missing");
+    const GROQ_API_KEY = Deno.env.get("GROQ_API_KEY");
+    if (!GROQ_API_KEY) {
+      console.error("GROQ_API_KEY missing");
       return jsonResponse(req, GENERIC_ERROR, 500);
     }
 
@@ -125,15 +125,15 @@ Global rules:
 
 
     const upstream = await fetch(
-      "https://ai.gateway.lovable.dev/v1/chat/completions",
+      "https://api.groq.com/openai/v1/chat/completions",
       {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          Authorization: `Bearer ${GROQ_API_KEY}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "google/gemini-3-flash-preview",
+          model: "llama-3.3-70b-versatile",
           messages: [{ role: "system", content: systemPrompt }, ...messages],
           stream: true,
         }),

@@ -1,11 +1,10 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 
-export type StudyMode = 'preclinical' | 'clinical' | 'guideline';
+export type StudyMode = 'preclinical' | 'clinical';
 
 export const STUDY_MODES: { value: StudyMode; label: string; hint: string }[] = [
-  { value: 'preclinical', label: 'Preclinical', hint: 'Mechanistic, Step 1 style' },
-  { value: 'clinical', label: 'Clinical', hint: 'Vignette-based, Step 2 CK style' },
-  { value: 'guideline', label: 'Guideline', hint: 'Guideline literature only' },
+  { value: 'preclinical', label: 'FIRA (Pre-Clinical)', hint: 'Mechanistic, Step 1 style' },
+  { value: 'clinical', label: 'KALIK (Clinical)', hint: 'Vignette-based, Step 2 CK style' },
 ];
 
 export type Specialty =
@@ -17,7 +16,15 @@ export type Specialty =
   | 'respiratory'
   | 'obgyn'
   | 'emergency'
-  | 'haematology';
+  | 'haematology'
+  | 'endocrine'
+  | 'infectious'
+  | 'rheumatology'
+  | 'oncology'
+  | 'psychiatry'
+  | 'paediatrics'
+  | 'dermatology'
+  | 'surgery';
 
 export const SPECIALTIES: { value: Specialty; label: string }[] = [
   { value: 'all', label: 'All Specialties' },
@@ -29,6 +36,14 @@ export const SPECIALTIES: { value: Specialty; label: string }[] = [
   { value: 'obgyn', label: 'Obs/Gynae' },
   { value: 'emergency', label: 'Emergency/Sepsis' },
   { value: 'haematology', label: 'Haematology' },
+  { value: 'endocrine', label: 'Endocrinology' },
+  { value: 'infectious', label: 'Infectious Disease' },
+  { value: 'rheumatology', label: 'Rheumatology' },
+  { value: 'oncology', label: 'Oncology' },
+  { value: 'psychiatry', label: 'Psychiatry' },
+  { value: 'paediatrics', label: 'Paediatrics' },
+  { value: 'dermatology', label: 'Dermatology' },
+  { value: 'surgery', label: 'Surgery' },
 ];
 
 interface ModeContextValue {

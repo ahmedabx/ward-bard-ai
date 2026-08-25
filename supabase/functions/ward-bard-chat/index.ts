@@ -45,6 +45,30 @@ serve(async (req) => {
     const mode: 'preclinical' | 'clinical' =
       rawMode === 'preclinical' ? 'preclinical' : 'clinical';
 
+    const SPECIALTY_LABELS: Record<string, string> = {
+      cardiology: "Cardiology",
+      nephrology: "Nephrology",
+      gi: "Gastroenterology & Hepatology",
+      neuro: "Neurology",
+      respiratory: "Respiratory & Pulmonology",
+      obgyn: "Obstetrics & Gynaecology",
+      emergency: "Emergency Medicine & Sepsis",
+      haematology: "Haematology",
+      endocrine: "Endocrinology",
+      infectious: "Infectious Disease",
+      rheumatology: "Rheumatology",
+      oncology: "Oncology",
+      psychiatry: "Psychiatry",
+      paediatrics: "Paediatrics",
+      dermatology: "Dermatology",
+      surgery: "Surgery",
+    };
+    const rawSpecialty = (body as { specialty?: unknown })?.specialty;
+    const specialtyLabel =
+      typeof rawSpecialty === "string" && SPECIALTY_LABELS[rawSpecialty]
+        ? SPECIALTY_LABELS[rawSpecialty]
+        : null;
+
     const MAX_TURNS = 20;
     if (!Array.isArray(rawMessages) || rawMessages.length === 0) {
       return jsonResponse(req, { error: "Invalid request" }, 400);
@@ -90,7 +114,9 @@ Close with a compact numbered reference list (source + year). Never fabricate.`;
 
     // ---- Ground the model in real, current PubMed evidence ----
     const lastUser = [...messages].reverse().find((m) => m.role === "user");
-    const term = sanitizeTerm(lastUser?.content ?? "");
+    const term = sanitizeTerm(
+      [lastUser?.content ?? "", specialtyLabel ?? ""].filter(Boolean).join(" "),
+    );
     const outcome = term
       ? await retrieveEvidence(term)
       : { results: [], failed: false, window: { from: MIN_DATE, to: MAX_DATE } };
@@ -101,6 +127,8 @@ Close with a compact numbered reference list (source + year). Never fabricate.`;
 DISCLAIMER: Educational purposes only. Not a substitute for professional medical advice.
 
 ${modeGuidance}
+${specialtyLabel ? `
+SPECIALTY FOCUS: ${specialtyLabel}. Frame reasoning, differentials, thresholds, and examples through a ${specialtyLabel} lens, and prefer ${specialtyLabel} society guidelines where they exist. If the question falls outside ${specialtyLabel}, answer it accurately anyway and note the specialty link in one short clause.` : ""}
 
 ${evidenceBlock}
 

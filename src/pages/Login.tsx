@@ -54,7 +54,7 @@ export default function Login() {
           </p>
 
           <button
-            onClick={handleGoogle}
+            onClick={handleGoogleSignIn}
             disabled={loading}
             className="w-full flex items-center justify-center gap-2.5 h-10 px-4 rounded-md bg-foreground text-background text-sm font-medium disabled:opacity-60 transition-opacity"
             style={{ borderRadius: 8 }}

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { lovable } from '@/integrations/lovable';
+import { supabase } from '@/integrations/supabase/client';
 import { MedBardLogo } from '@/components/MedBardLogo';
 import { Loader2 } from 'lucide-react';
 
@@ -13,21 +13,20 @@ export default function Login() {
   const nextParam = params.get('next');
   const nextPath = nextParam && nextParam.startsWith('/') && !nextParam.startsWith('//') ? nextParam : null;
 
-  const handleGoogle = async () => {
+  const handleGoogleSignIn = async () => {
     setLoading(true);
     setError(null);
     try {
-      const result = await lovable.auth.signInWithOAuth('google', {
-        redirect_uri: window.location.origin,
+      if (nextPath) sessionStorage.setItem('medbard.postAuthPath', nextPath);
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: { redirectTo: `${window.location.origin}/auth/callback` },
       });
-      if (result.error) {
-        setError(result.error.message || 'Sign in failed. Please try again.');
+      if (error) {
+        console.error('Google sign-in error:', error);
+        setError(error.message || 'Sign in failed. Please try again.');
         setLoading(false);
-        return;
       }
-      if (result.redirected) return;
-      // Session set — navigate to intended destination or chat.
-      window.location.href = nextPath ?? '/chat';
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Sign in failed.');
       setLoading(false);
@@ -55,7 +54,7 @@ export default function Login() {
           </p>
 
           <button
-            onClick={handleGoogle}
+            onClick={handleGoogleSignIn}
             disabled={loading}
             className="w-full flex items-center justify-center gap-2.5 h-10 px-4 rounded-md bg-foreground text-background text-sm font-medium disabled:opacity-60 transition-opacity"
             style={{ borderRadius: 8 }}

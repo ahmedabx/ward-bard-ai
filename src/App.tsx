@@ -15,6 +15,7 @@ import Calculators from "./pages/Calculators";
 import MyPatient from "./pages/MyPatient";
 import QbankMaker from "./pages/QbankMaker";
 import NotFound from "./pages/NotFound";
+import AuthCallback from "./pages/AuthCallback";
 
 const queryClient = new QueryClient();
 
@@ -33,6 +34,7 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <Routes>
+            <Route path="/auth/callback" element={<AuthCallback />} />
             <Route path="/login" element={<AuthGate invert><Login /></AuthGate>} />
             <Route path="/" element={<Protected><Chat /></Protected>} />
             <Route path="/chat" element={<Protected><Chat /></Protected>} />

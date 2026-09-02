@@ -16,7 +16,7 @@ import {
 } from "../_shared/security.ts";
 
 const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
-const GROQ_MODEL = "llama-3.3-70b-versatile";
+const GROQ_MODEL = "openai/gpt-oss-120b";
 
 const DAILY_CASE_LIMIT = 2;
 

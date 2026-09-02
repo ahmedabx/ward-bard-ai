@@ -1,5 +1,5 @@
 // Qbank Maker — generates a set of exam-style MCQs on a topic.
-// Uses Groq (llama-3.3-70b-versatile) with strict JSON output.
+// Uses Groq (openai/gpt-oss-120b) with strict JSON output.
 
 import {
   preflight,
@@ -85,7 +85,7 @@ Generate exactly ${count} MCQs.`;
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "llama-3.3-70b-versatile",
+        model: "openai/gpt-oss-120b",
         messages: [
           { role: "system", content: SYSTEM },
           { role: "user", content: userMsg },

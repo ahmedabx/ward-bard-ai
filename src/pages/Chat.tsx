@@ -25,7 +25,7 @@ export default function Chat() {
   const { currentSession, sendMessage, isLoading } = chat;
   const { mode, setMode, specialty, setSpecialty } = useStudyMode();
 
-  const { remaining, limit, limitReached, consume } = useDailyUsage('assistant', DAILY_QUERY_LIMIT);
+  const { limitReached, consume } = useDailyUsage('assistant', DAILY_QUERY_LIMIT);
 
   const send = useCallback(
     (text: string) => {

@@ -3,7 +3,6 @@ import { useSearchParams } from 'react-router-dom';
 import { AppLayout } from '@/components/AppLayout';
 import { ChatMessageBubble } from '@/components/ChatMessageBubble';
 import { ChatInput } from '@/components/ChatInput';
-import { UsageBadge } from '@/components/UsageBadge';
 import { useDailyUsage } from '@/hooks/use-daily-usage';
 import { useChatContext } from '@/contexts/ChatContext';
 import { useStudyMode, STUDY_MODES, SPECIALTIES } from '@/contexts/ModeContext';
@@ -16,7 +15,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 
-const DAILY_QUERY_LIMIT = 7;
+const DAILY_QUERY_LIMIT = 14;
 
 export default function Chat() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -26,7 +25,7 @@ export default function Chat() {
   const { currentSession, sendMessage, isLoading } = chat;
   const { mode, setMode, specialty, setSpecialty } = useStudyMode();
 
-  const { remaining, limit, limitReached, consume } = useDailyUsage('assistant', DAILY_QUERY_LIMIT);
+  const { limitReached, consume } = useDailyUsage('assistant', DAILY_QUERY_LIMIT);
 
   const send = useCallback(
     (text: string) => {
@@ -148,7 +147,7 @@ export default function Chat() {
         isLoading={isLoading}
         autoFocus
         disabled={limitReached}
-        disabledMessage="You've used all 7 queries for today. Come back tomorrow for more."
+        disabledMessage="You've reached your daily limit for My Assistant. Come back tomorrow for more."
       />
     </div>
   );
@@ -156,7 +155,6 @@ export default function Chat() {
   return (
     <AppLayout
       inputBar={composer}
-      topbarRight={<UsageBadge label="Queries remaining:" remaining={remaining} limit={limit} />}
     >
 
       <div className="px-4 md:px-6 py-6 md:py-10">

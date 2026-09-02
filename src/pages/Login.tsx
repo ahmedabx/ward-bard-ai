@@ -81,6 +81,11 @@ export default function Login() {
           MedBard is intended for medical education and exam preparation. It is not a tool for
           real-world patient-care decisions.
         </p>
+
+        <p className="mt-2 text-[11px] text-muted-foreground text-center leading-relaxed px-4">
+          We only use your Google account to verify who you are. We don't access your email, files, or contacts.
+        </p>
+
       </div>
     </div>
   );

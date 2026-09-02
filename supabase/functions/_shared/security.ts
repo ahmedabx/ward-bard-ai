@@ -7,6 +7,7 @@ const ALLOWED_ORIGINS = new Set([
   "https://wardbard.site",
   "https://www.wardbard.site",
   "https://ward-bard-ai.lovable.app",
+  "https://medbard.dpdns.org",
   "http://localhost:5173",
   "http://localhost:8080",
 ]);

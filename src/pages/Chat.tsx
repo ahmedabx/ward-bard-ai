@@ -5,7 +5,7 @@ import { ChatMessageBubble } from '@/components/ChatMessageBubble';
 import { ChatInput } from '@/components/ChatInput';
 import { useDailyUsage } from '@/hooks/use-daily-usage';
 import { useChatContext } from '@/contexts/ChatContext';
-import { useStudyMode, STUDY_MODES, SPECIALTIES } from '@/contexts/ModeContext';
+import { useStudyMode, STUDY_MODES } from '@/contexts/ModeContext';
 import { ChevronDown, Check } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import {

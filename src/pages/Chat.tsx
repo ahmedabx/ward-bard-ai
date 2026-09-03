@@ -74,7 +74,6 @@ export default function Chat() {
   const HAIRLINE = '0.5px solid hsl(var(--hairline) / var(--hairline-alpha))';
 
   const activeMode = STUDY_MODES.find((m) => m.value === mode) ?? STUDY_MODES[1];
-  const activeSpecialty = SPECIALTIES.find((s) => s.value === specialty) ?? SPECIALTIES[0];
 
   const SUGGESTIONS = [
     'Management of septic shock',
@@ -110,30 +109,6 @@ export default function Chat() {
                     <span className="text-[11px] text-muted-foreground">{m.hint}</span>
                   </span>
                   {mode === m.value && <Check className="h-3.5 w-3.5 mt-1 text-primary" />}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button
-                className="flex items-center gap-1.5 rounded-md px-3 md:px-2.5 h-8 md:h-7 text-[12px] md:text-[11px] font-medium text-foreground transition-colors hover:bg-foreground/[0.05]"
-                style={{ border: HAIRLINE, background: 'transparent' }}
-                aria-label="Specialty focus"
-              >
-                {activeSpecialty.label}
-                <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" side="top" className="w-52 max-h-72 overflow-y-auto">
-              {SPECIALTIES.map((s) => (
-                <DropdownMenuItem
-                  key={s.value}
-                  onSelect={() => setSpecialty(s.value)}
-                  className="flex items-center justify-between gap-2"
-                >
-                  <span className="text-[13px]">{s.label}</span>
-                  {specialty === s.value && <Check className="h-3.5 w-3.5 text-primary" />}
                 </DropdownMenuItem>
               ))}
             </DropdownMenuContent>

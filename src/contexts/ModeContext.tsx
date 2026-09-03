@@ -1,10 +1,11 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 
-export type StudyMode = 'preclinical' | 'clinical';
+export type StudyMode = 'preclinical' | 'clinical' | 'general';
 
 export const STUDY_MODES: { value: StudyMode; label: string; hint: string }[] = [
   { value: 'preclinical', label: 'ZAYO (Pre-Clinical)', hint: 'Mechanistic, Step 1 style' },
   { value: 'clinical', label: 'KALIK (Clinical)', hint: 'Vignette-based, Step 2 CK style' },
+  { value: 'general', label: 'General', hint: 'Everyday clinical queries, unscoped' },
 ];
 
 export type Specialty =

@@ -23,7 +23,7 @@ export default function Chat() {
 
   const chat = useChatContext();
   const { currentSession, sendMessage, isLoading } = chat;
-  const { mode, setMode, specialty, setSpecialty } = useStudyMode();
+  const { mode, setMode, specialty } = useStudyMode();
 
   const { limitReached, consume } = useDailyUsage('assistant', DAILY_QUERY_LIMIT);
 

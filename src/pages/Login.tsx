@@ -39,6 +39,10 @@ export default function Login() {
       className="min-h-screen flex items-center justify-center px-6"
       style={{ background: 'hsl(var(--surface-main))' }}
     >
+      <Helmet>
+        <title>Sign In — MedBard</title>
+        <meta name="description" content="Sign in to MedBard — medical exam-preparation and study for USMLE Step 1, Step 2 CK, MBBS, and FCPS." />
+      </Helmet>
       <div className="w-full max-w-sm">
         <div className="flex flex-col items-center text-center mb-8">
           <MedBardLogo size="lg" showWordmark tagline />

@@ -121,28 +121,47 @@ async function callGroq(
   user: string,
   temperature: number,
 ): Promise<string> {
-  const resp = await fetch(GROQ_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model: GROQ_MODEL,
-      temperature,
-      response_format: { type: "json_object" },
-      messages: [
-        { role: "system", content: system },
-        { role: "user", content: user },
-      ],
-    }),
-  });
-  if (!resp.ok) {
-    console.error("Groq upstream error", resp.status);
-    throw new Error("upstream");
+  try {
+    const resp = await fetch(GROQ_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: GROQ_MODEL,
+        temperature,
+        response_format: { type: "json_object" },
+        messages: [
+          { role: "system", content: system },
+          { role: "user", content: user },
+        ],
+      }),
+    });
+
+    const rawText = await resp.text();
+
+    if (!resp.ok) {
+      const err = new Error("upstream") as Error & { status?: number; body?: string };
+      err.status = resp.status;
+      err.body = rawText;
+      console.error("[groq-patient] Groq upstream error", {
+        status: resp.status,
+        statusText: resp.statusText,
+        body: rawText,
+      });
+      throw err;
+    }
+
+    console.log("[groq-patient] raw Groq response body", rawText);
+
+    const data = JSON.parse(rawText);
+    return (data?.choices?.[0]?.message?.content as string) ?? "";
+  } catch (e) {
+    if ((e as Error)?.message === "upstream") throw e;
+    console.error("[groq-patient] Groq call threw", e);
+    throw e;
   }
-  const data = await resp.json();
-  return (data?.choices?.[0]?.message?.content as string) ?? "";
 }
 
 function clampNum(v: unknown, min: number, max: number, fallback: number): number {

@@ -121,28 +121,47 @@ async function callGroq(
   user: string,
   temperature: number,
 ): Promise<string> {
-  const resp = await fetch(GROQ_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model: GROQ_MODEL,
-      temperature,
-      response_format: { type: "json_object" },
-      messages: [
-        { role: "system", content: system },
-        { role: "user", content: user },
-      ],
-    }),
-  });
-  if (!resp.ok) {
-    console.error("Groq upstream error", resp.status);
-    throw new Error("upstream");
+  try {
+    const resp = await fetch(GROQ_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: GROQ_MODEL,
+        temperature,
+        response_format: { type: "json_object" },
+        messages: [
+          { role: "system", content: system },
+          { role: "user", content: user },
+        ],
+      }),
+    });
+
+    const rawText = await resp.text();
+
+    if (!resp.ok) {
+      const err = new Error("upstream") as Error & { status?: number; body?: string };
+      err.status = resp.status;
+      err.body = rawText;
+      console.error("[groq-patient] Groq upstream error", {
+        status: resp.status,
+        statusText: resp.statusText,
+        body: rawText,
+      });
+      throw err;
+    }
+
+    console.log("[groq-patient] raw Groq response body", rawText);
+
+    const data = JSON.parse(rawText);
+    return (data?.choices?.[0]?.message?.content as string) ?? "";
+  } catch (e) {
+    if ((e as Error)?.message === "upstream") throw e;
+    console.error("[groq-patient] Groq call threw", e);
+    throw e;
   }
-  const data = await resp.json();
-  return (data?.choices?.[0]?.message?.content as string) ?? "";
 }
 
 function clampNum(v: unknown, min: number, max: number, fallback: number): number {
@@ -308,17 +327,39 @@ Deno.serve(async (req) => {
         ? "Pitch decisions at USMLE Step 1 / preclinical level — mechanism, pathophysiology and basic pharmacology driven."
         : "Pitch decisions at USMLE Step 2 CK / clinical level — acute assessment and management driven.";
 
-      const content = await callGroq(
-        apiKey,
-        SYS_CASE,
-        `Design one randomized ${specialtyLabel} case. The presenting problem and all decisions MUST belong to ${specialtyLabel}. ${levelHint} Seed: ${seed}`,
-        1,
-      );
+      console.log("[groq-patient] new_case requested", {
+        specialty: specialtyKey,
+        specialtyLabel,
+        mode,
+        seed,
+        timestamp: new Date().toISOString(),
+      });
+
+      let content: string;
+      try {
+        content = await callGroq(
+          apiKey,
+          SYS_CASE,
+          `Design one randomized ${specialtyLabel} case. The presenting problem and all decisions MUST belong to ${specialtyLabel}. ${levelHint} Seed: ${seed}`,
+          1,
+        );
+      } catch (e) {
+        const err = e as Error & { status?: number; body?: string };
+        console.error("[groq-patient] callGroq failed", {
+          status: err?.status,
+          message: err?.message,
+          body: err?.body,
+        });
+        throw e;
+      }
+
+      console.log("[groq-patient] raw generated content before parse", content);
 
       let built: BuiltCase | null = null;
       try {
         built = buildCase(extractJson(content), specialtyLabel);
       } catch (_e) {
+        console.error("[groq-patient] case parse/build failed", _e);
         built = null;
       }
       if (!built) {

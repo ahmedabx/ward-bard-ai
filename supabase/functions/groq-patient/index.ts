@@ -29,6 +29,14 @@ const SPECIALTY_LABELS: Record<string, string> = {
   obgyn: "Obstetrics & Gynaecology",
   emergency: "Emergency medicine / Sepsis",
   haematology: "Haematology",
+  endocrine: "Endocrinology",
+  infectious: "Infectious disease",
+  rheumatology: "Rheumatology",
+  oncology: "Oncology",
+  psychiatry: "Psychiatry",
+  paediatrics: "Paediatrics",
+  dermatology: "Dermatology",
+  surgery: "General surgery",
 };
 
 const GENERIC_ERROR = { error: "Something went wrong. Please try again." };
@@ -131,6 +139,8 @@ async function callGroq(
       body: JSON.stringify({
         model: GROQ_MODEL,
         temperature,
+        max_completion_tokens: 16000,
+        reasoning_effort: "low",
         response_format: { type: "json_object" },
         messages: [
           { role: "system", content: system },
@@ -335,32 +345,36 @@ Deno.serve(async (req) => {
         timestamp: new Date().toISOString(),
       });
 
-      let content: string;
-      try {
-        content = await callGroq(
-          apiKey,
-          SYS_CASE,
-          `Design one randomized ${specialtyLabel} case. The presenting problem and all decisions MUST belong to ${specialtyLabel}. ${levelHint} Seed: ${seed}`,
-          1,
-        );
-      } catch (e) {
-        const err = e as Error & { status?: number; body?: string };
-        console.error("[groq-patient] callGroq failed", {
-          status: err?.status,
-          message: err?.message,
-          body: err?.body,
-        });
-        throw e;
-      }
-
-      console.log("[groq-patient] raw generated content before parse", content);
-
       let built: BuiltCase | null = null;
-      try {
-        built = buildCase(extractJson(content), specialtyLabel);
-      } catch (_e) {
-        console.error("[groq-patient] case parse/build failed", _e);
-        built = null;
+      for (let attempt = 1; attempt <= 3 && !built; attempt++) {
+        let content = "";
+        try {
+          content = await callGroq(
+            apiKey,
+            SYS_CASE,
+            `Design one randomized ${specialtyLabel} case. The presenting problem and all decisions MUST belong to ${specialtyLabel}. ${levelHint} Seed: ${seed}-${attempt}`,
+            1,
+          );
+        } catch (e) {
+          const err = e as Error & { status?: number; body?: string };
+          console.error("[groq-patient] callGroq failed", {
+            attempt,
+            status: err?.status,
+            message: err?.message,
+            body: err?.body,
+          });
+          continue;
+        }
+
+        try {
+          built = buildCase(extractJson(content), specialtyLabel);
+        } catch (_e) {
+          console.error("[groq-patient] case parse/build failed", { attempt, error: String(_e) });
+          built = null;
+        }
+        if (!built) {
+          console.error("[groq-patient] unusable content", { attempt, preview: content.slice(0, 500) });
+        }
       }
       if (!built) {
         return jsonResponse(req, { error: "Could not build a case. Please try again." }, 502);

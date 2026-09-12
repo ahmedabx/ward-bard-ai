@@ -29,6 +29,14 @@ const SPECIALTY_LABELS: Record<string, string> = {
   obgyn: "Obstetrics & Gynaecology",
   emergency: "Emergency medicine / Sepsis",
   haematology: "Haematology",
+  endocrine: "Endocrinology",
+  infectious: "Infectious disease",
+  rheumatology: "Rheumatology",
+  oncology: "Oncology",
+  psychiatry: "Psychiatry",
+  paediatrics: "Paediatrics",
+  dermatology: "Dermatology",
+  surgery: "General surgery",
 };
 
 const GENERIC_ERROR = { error: "Something went wrong. Please try again." };
@@ -131,6 +139,8 @@ async function callGroq(
       body: JSON.stringify({
         model: GROQ_MODEL,
         temperature,
+        max_completion_tokens: 16000,
+        reasoning_effort: "low",
         response_format: { type: "json_object" },
         messages: [
           { role: "system", content: system },

@@ -345,32 +345,36 @@ Deno.serve(async (req) => {
         timestamp: new Date().toISOString(),
       });
 
-      let content: string;
-      try {
-        content = await callGroq(
-          apiKey,
-          SYS_CASE,
-          `Design one randomized ${specialtyLabel} case. The presenting problem and all decisions MUST belong to ${specialtyLabel}. ${levelHint} Seed: ${seed}`,
-          1,
-        );
-      } catch (e) {
-        const err = e as Error & { status?: number; body?: string };
-        console.error("[groq-patient] callGroq failed", {
-          status: err?.status,
-          message: err?.message,
-          body: err?.body,
-        });
-        throw e;
-      }
-
-      console.log("[groq-patient] raw generated content before parse", content);
-
       let built: BuiltCase | null = null;
-      try {
-        built = buildCase(extractJson(content), specialtyLabel);
-      } catch (_e) {
-        console.error("[groq-patient] case parse/build failed", _e);
-        built = null;
+      for (let attempt = 1; attempt <= 3 && !built; attempt++) {
+        let content = "";
+        try {
+          content = await callGroq(
+            apiKey,
+            SYS_CASE,
+            `Design one randomized ${specialtyLabel} case. The presenting problem and all decisions MUST belong to ${specialtyLabel}. ${levelHint} Seed: ${seed}-${attempt}`,
+            1,
+          );
+        } catch (e) {
+          const err = e as Error & { status?: number; body?: string };
+          console.error("[groq-patient] callGroq failed", {
+            attempt,
+            status: err?.status,
+            message: err?.message,
+            body: err?.body,
+          });
+          continue;
+        }
+
+        try {
+          built = buildCase(extractJson(content), specialtyLabel);
+        } catch (_e) {
+          console.error("[groq-patient] case parse/build failed", { attempt, error: String(_e) });
+          built = null;
+        }
+        if (!built) {
+          console.error("[groq-patient] unusable content", { attempt, preview: content.slice(0, 500) });
+        }
       }
       if (!built) {
         return jsonResponse(req, { error: "Could not build a case. Please try again." }, 502);

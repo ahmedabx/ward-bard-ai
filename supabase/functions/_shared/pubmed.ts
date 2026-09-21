@@ -4,6 +4,7 @@
 
 const ESEARCH = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi";
 const ESUMMARY = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi";
+const EFETCH = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi";
 
 export const MIN_DATE = "2022/01/01";
 export const MAX_DATE = `${new Date().getFullYear() + 1}/12/31`;
@@ -15,6 +16,10 @@ export interface PubMedResult {
   journal: string;
   year: string;
   url: string;
+  /** Abstract text (may be empty when PubMed has none). */
+  abstract?: string;
+  /** 0..1 semantic relevance to the user's question. */
+  relevance?: number;
 }
 
 export interface RetrievalOutcome {
@@ -142,40 +147,130 @@ async function fetchSummary(ids: string[]): Promise<PubMedResult[]> {
     .filter((x): x is PubMedResult => x !== null);
 }
 
+/** Fetches abstracts for the given PMIDs. Never throws. */
+async function fetchAbstracts(ids: string[]): Promise<Record<string, string>> {
+  const params = new URLSearchParams({
+    db: "pubmed",
+    id: ids.join(","),
+    retmode: "xml",
+    rettype: "abstract",
+  });
+  const out: Record<string, string> = {};
+  try {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 9000);
+    let xml: string;
+    try {
+      const resp = await fetch(`${EFETCH}?${params}`, { signal: ctrl.signal });
+      if (!resp.ok) throw new Error(`Entrez efetch HTTP ${resp.status}`);
+      xml = await resp.text();
+    } finally {
+      clearTimeout(timer);
+    }
+    for (const chunk of xml.split(/<PubmedArticle[\s>]/).slice(1)) {
+      const pmid = (chunk.match(/<PMID[^>]*>(\d+)<\/PMID>/) || [])[1];
+      if (!pmid) continue;
+      const parts = [...chunk.matchAll(/<AbstractText[^>]*>([\s\S]*?)<\/AbstractText>/g)]
+        .map((m) => m[1].replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim())
+        .filter(Boolean);
+      if (parts.length) out[pmid] = parts.join(" ").slice(0, 1600);
+    }
+  } catch (e) {
+    console.warn("[pubmed] efetch abstracts failed:", e instanceof Error ? e.message : e);
+  }
+  return out;
+}
+
+// ---- Semantic relevance re-ranking -------------------------------------
+// Scores each candidate against the ORIGINAL question (not the stripped
+// keyword bag) over title + abstract, so papers that merely share one
+// incidental word are dropped instead of being cited.
+
+function conceptTerms(question: string): string[] {
+  const seen = new Set<string>();
+  for (const w of question.toLowerCase().replace(/[^\w\s-]/g, " ").split(/\s+/)) {
+    const t = w.trim();
+    if (t.length < 4 || QUESTION_STOPWORDS.has(t)) continue;
+    seen.add(t);
+  }
+  return [...seen];
+}
+
+/** Loose stem match so "anticoagulation" matches "anticoagulant". */
+function mentions(haystack: string, term: string): boolean {
+  const stem = term.length > 6 ? term.slice(0, Math.max(5, term.length - 3)) : term;
+  return haystack.includes(stem);
+}
+
+/** Minimum share of the question's concepts a source must cover to be cited. */
+const RELEVANCE_FLOOR = 0.3;
+
+function scoreRelevance(
+  r: PubMedResult,
+  concepts: string[],
+  currentYear: number,
+): number {
+  if (!concepts.length) return 0.5;
+  const title = r.title.toLowerCase();
+  const haystack = `${title} ${(r.abstract || "").toLowerCase()}`;
+
+  let titleHits = 0;
+  let bodyHits = 0;
+  for (const c of concepts) {
+    if (mentions(title, c)) titleHits++;
+    else if (mentions(haystack, c)) bodyHits++;
+  }
+
+  const coverage = (titleHits + bodyHits * 0.6) / concepts.length;
+  const titleWeight = titleHits / concepts.length;
+
+  const year = parseInt(r.year, 10);
+  const age = Number.isFinite(year) ? currentYear - year : 99;
+  const recency = age <= 2 ? 0.08 : age <= 4 ? 0.04 : 0;
+  const guideline =
+    /guideline|consensus|recommendation|society|statement|meta-analysis|systematic review/i
+      .test(`${r.title} ${r.journal}`)
+      ? 0.08
+      : 0;
+
+  return Math.min(1, coverage * 0.6 + titleWeight * 0.3 + recency + guideline);
+}
+
 const GUIDELINE_FILTER =
   '("guideline"[pt] OR "practice guideline"[pt] OR "consensus development conference"[pt])';
 const REVIEW_FILTER =
   '("systematic review"[pt] OR "meta-analysis"[pt] OR "review"[pt])';
 
 /**
- * Layered retrieval, all inside the 2022+ window:
- * guidelines -> high-level reviews -> best relevance match.
+ * Layered retrieval, all inside the 2022+ window (a hard esearch constraint):
+ * guidelines -> high-level reviews -> best relevance match. Candidates are then
+ * re-ranked against the original question using title + abstract, and anything
+ * below the relevance floor is dropped rather than cited loosely.
  * Throws nothing: failures are reported via `failed` and logged loudly.
  */
 export async function retrieveEvidence(
   rawTerm: string,
-  max = 6,
+  max = 5,
 ): Promise<RetrievalOutcome> {
   const term = toSearchTerm(rawTerm);
   const attempts: Array<{ term: string; retmax: number; sort?: string }> = [
-    { term: `${term} AND ${GUIDELINE_FILTER}`, retmax: 3 },
-    { term: `${term} AND ${REVIEW_FILTER}`, retmax: 3 },
-    { term, retmax: 3 },
-    { term, retmax: 3, sort: "pub_date" },
+    { term: `${term} AND ${GUIDELINE_FILTER}`, retmax: 4 },
+    { term: `${term} AND ${REVIEW_FILTER}`, retmax: 4 },
+    { term, retmax: 4 },
   ];
 
   const ids: string[] = [];
   let anySuccess = false;
   let anyFailure = false;
 
+  const CANDIDATE_CAP = 12;
   for (const a of attempts) {
-    if (ids.length >= max) break;
+    if (ids.length >= CANDIDATE_CAP) break;
     try {
       const found = await fetchIds(a.term, a);
       anySuccess = true;
       for (const id of found) if (!ids.includes(id)) ids.push(id);
       await sleep(350); // stay under NCBI's ~3 req/sec keyless limit
-
     } catch (e) {
       anyFailure = true;
       console.error(
@@ -195,19 +290,34 @@ export async function retrieveEvidence(
     return { results: [], failed: false, window };
   }
 
+  const candidateIds = ids.slice(0, CANDIDATE_CAP);
+  let summaries: PubMedResult[];
   try {
-    const results = await fetchSummary(ids.slice(0, max));
-    console.log(
-      `[pubmed] term="${term}" window=${MIN_DATE}..${MAX_DATE} -> ${results.length} sources (PMIDs: ${ids.slice(0, max).join(",")})`,
-    );
-    return { results, failed: false, window };
+    summaries = await fetchSummary(candidateIds);
   } catch (e) {
-    console.error(
-      "[pubmed] esummary FAILED:",
-      e instanceof Error ? e.message : e,
-    );
+    console.error("[pubmed] esummary FAILED:", e instanceof Error ? e.message : e);
     return { results: [], failed: true, window };
   }
+
+  const abstracts = await fetchAbstracts(candidateIds);
+  const currentYear = new Date().getFullYear();
+  const concepts = conceptTerms(rawTerm);
+
+  const ranked = summaries
+    .map((r) => {
+      const withAbstract = { ...r, abstract: abstracts[r.pmid] || "" };
+      return { ...withAbstract, relevance: scoreRelevance(withAbstract, concepts, currentYear) };
+    })
+    .sort((a, b) => (b.relevance ?? 0) - (a.relevance ?? 0));
+
+  const results = ranked.filter((r) => (r.relevance ?? 0) >= RELEVANCE_FLOOR).slice(0, max);
+
+  console.log(
+    `[pubmed] term="${term}" window=${MIN_DATE}..${MAX_DATE} candidates=${ranked.length} kept=${results.length} ` +
+      `(PMIDs: ${results.map((r) => `${r.pmid}@${(r.relevance ?? 0).toFixed(2)}`).join(",") || "none"})`,
+  );
+
+  return { results, failed: false, window };
 }
 
 /** Renders retrieved evidence as a structured block for the model prompt. */
@@ -216,10 +326,12 @@ export function formatEvidenceForPrompt(outcome: RetrievalOutcome): string {
     return `RETRIEVED EVIDENCE: RETRIEVAL_FAILED — the PubMed evidence service could not be reached.`;
   }
   if (!outcome.results.length) {
-    return `RETRIEVED EVIDENCE: NONE — no PubMed records published between ${outcome.window.from} and ${outcome.window.to} matched this query.`;
+    return `RETRIEVED EVIDENCE: NONE — no PubMed records published between ${outcome.window.from} and ${outcome.window.to} were relevant to this question.`;
   }
-  const lines = outcome.results.map((r, i) =>
-    `[${i + 1}] ${r.title} — ${r.journal || "Journal n/a"}, ${r.year || "year n/a"}. ${r.authorLine}. PMID ${r.pmid}. ${r.url}`
-  );
+  const lines = outcome.results.map((r, i) => {
+    const snippet = (r.abstract || "").slice(0, 320);
+    return `[${i + 1}] ${r.title} — ${r.journal || "Journal n/a"}, ${r.year || "year n/a"}.` +
+      (snippet ? `\n    Abstract: ${snippet}${(r.abstract || "").length > 320 ? "…" : ""}` : "\n    Abstract: not available.");
+  });
   return `RETRIEVED EVIDENCE (PubMed, published ${outcome.window.from}–${outcome.window.to}):\n${lines.join("\n")}`;
 }

@@ -104,7 +104,7 @@ serve(async (req) => {
 Anchor answers in mechanism, anatomy, physiology, biochemistry, pharmacology, and pathology.
 Open directly with the concept in 1-2 sentences — no "Concept" header.
 Then give the mechanism and high-yield facts (buzzwords, enzymes, pathways, receptors) in tight prose or a short bullet run, with clinical relevance folded in where it belongs rather than as a separate trailing block.
-Close with a compact numbered reference list (source + year). Never fabricate.`
+Never fabricate.`
       : `You are in CLINICAL mode. The learner is preparing for USMLE Step 2 CK / clinical MBBS / FCPS.
 Anchor answers in current guidelines (AHA/ACC, WHO, ESC, NICE, USPSTF) and clinical reasoning.
 Open directly with the diagnosis/concept in 1-2 sentences — no "Assessment" header, no long definitional preamble.

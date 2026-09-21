@@ -80,7 +80,7 @@ export function useChat() {
     loadedSessions.current.add(sessionId);
     const { data, error } = await supabase
       .from('chat_messages')
-      .select('id, role, content, created_at')
+      .select('id, role, content, created_at, sources')
       .eq('session_id', sessionId)
       .order('created_at', { ascending: true });
     if (error) { console.error('Failed to load messages:', error.message); return; }
@@ -91,6 +91,7 @@ export function useChat() {
         role: m.role as 'user' | 'assistant',
         content: m.content,
         timestamp: new Date(m.created_at),
+        sources: Array.isArray(m.sources) ? (m.sources as unknown as MessageSource[]) : undefined,
       })),
     } : s));
   }, []);

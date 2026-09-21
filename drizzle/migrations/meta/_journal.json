@@ -1,0 +1,13 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1790001560839,
+      "tag": "0000_add_sources_to_chat_messages",
+      "breakpoints": true
+    }
+  ]
+}

@@ -4,6 +4,7 @@
 
 const ESEARCH = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi";
 const ESUMMARY = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi";
+const EFETCH = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi";
 
 export const MIN_DATE = "2022/01/01";
 export const MAX_DATE = `${new Date().getFullYear() + 1}/12/31`;
@@ -15,6 +16,10 @@ export interface PubMedResult {
   journal: string;
   year: string;
   url: string;
+  /** Abstract text (may be empty when PubMed has none). */
+  abstract?: string;
+  /** 0..1 semantic relevance to the user's question. */
+  relevance?: number;
 }
 
 export interface RetrievalOutcome {

@@ -1,11 +1,23 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
+export interface MessageSource {
+  pmid: string;
+  title: string;
+  authorLine: string;
+  journal: string;
+  year: string;
+  url: string;
+}
+
 export interface ChatMessage {
   id: string;
   role: 'user' | 'assistant';
   content: string;
   timestamp: Date;
+  /** Ranked evidence returned with this answer; numbering matches inline [n] markers. */
+  sources?: MessageSource[];
+  retrievalFailed?: boolean;
 }
 
 export interface ChatSession {

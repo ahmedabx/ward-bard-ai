@@ -1,37 +1,16 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useMemo } from 'react';
 import { ShieldCheck, ShieldAlert, Shield, ExternalLink } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
 import { assessConfidence, type RawSource, type ConfidenceLevel } from '@/lib/confidence';
 
 interface Props {
   query: string;
   answer: string;
+  /** Ranked sources returned with this answer; numbering matches inline [n] markers. */
+  sources: RawSource[];
+  retrievalFailed?: boolean;
   isStreaming?: boolean;
   /** Prefix used to build stable anchor ids so inline [n] chips can jump here. */
   anchorPrefix: string;
-}
-
-interface Retrieval {
-  results: RawSource[];
-  failed: boolean;
-}
-
-async function searchPubMed(query: string): Promise<Retrieval> {
-  const { data, error } = await supabase.functions.invoke('pubmed-search', {
-    body: { query },
-  });
-  if (error) {
-    console.error('[evidence] pubmed-search failed:', error.message);
-    return { results: [], failed: true };
-  }
-  if (!data || !Array.isArray(data.results)) {
-    console.error('[evidence] unexpected pubmed-search payload:', data);
-    return { results: [], failed: true };
-  }
-  return {
-    results: data.results as RawSource[],
-    failed: Boolean(data.retrievalFailed),
-  };
 }
 
 const levelStyles: Record<ConfidenceLevel, { color: string; Icon: typeof Shield }> = {

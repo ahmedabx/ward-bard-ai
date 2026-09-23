@@ -142,6 +142,8 @@ export function ChatMessageBubble({ message, onSave, previousUserMessage, isStre
         <AssistantConfidence
           query={previousUserMessage}
           answer={message.content}
+          sources={message.sources ?? []}
+          retrievalFailed={message.retrievalFailed}
           isStreaming={isStreaming}
           anchorPrefix={anchorPrefix}
         />

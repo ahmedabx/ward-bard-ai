@@ -1,37 +1,16 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useMemo } from 'react';
 import { ShieldCheck, ShieldAlert, Shield, ExternalLink } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
 import { assessConfidence, type RawSource, type ConfidenceLevel } from '@/lib/confidence';
 
 interface Props {
   query: string;
   answer: string;
+  /** Ranked sources returned with this answer; numbering matches inline [n] markers. */
+  sources: RawSource[];
+  retrievalFailed?: boolean;
   isStreaming?: boolean;
   /** Prefix used to build stable anchor ids so inline [n] chips can jump here. */
   anchorPrefix: string;
-}
-
-interface Retrieval {
-  results: RawSource[];
-  failed: boolean;
-}
-
-async function searchPubMed(query: string): Promise<Retrieval> {
-  const { data, error } = await supabase.functions.invoke('pubmed-search', {
-    body: { query },
-  });
-  if (error) {
-    console.error('[evidence] pubmed-search failed:', error.message);
-    return { results: [], failed: true };
-  }
-  if (!data || !Array.isArray(data.results)) {
-    console.error('[evidence] unexpected pubmed-search payload:', data);
-    return { results: [], failed: true };
-  }
-  return {
-    results: data.results as RawSource[],
-    failed: Boolean(data.retrievalFailed),
-  };
 }
 
 const levelStyles: Record<ConfidenceLevel, { color: string; Icon: typeof Shield }> = {
@@ -42,48 +21,14 @@ const levelStyles: Record<ConfidenceLevel, { color: string; Icon: typeof Shield 
 
 const HAIRLINE = '0.5px solid hsl(var(--hairline) / var(--hairline-alpha))';
 
-function SourceSkeleton() {
-  return (
-    <div className="mt-4 space-y-2" aria-hidden>
-      {[0, 1, 2].map((i) => (
-        <div key={i} className="rounded-md px-3 py-2.5" style={{ border: HAIRLINE }}>
-          <div
-            className="h-2 rounded-full bg-primary/25 evidence-pulse"
-            style={{ width: `${72 - i * 12}%`, animationDelay: `${i * 120}ms` }}
-          />
-          <div
-            className="mt-2 h-1.5 rounded-full bg-primary/15 evidence-pulse"
-            style={{ width: '38%', animationDelay: `${i * 120 + 60}ms` }}
-          />
-        </div>
-      ))}
-    </div>
-  );
-}
-
-export function AssistantConfidence({ query, answer, isStreaming, anchorPrefix }: Props) {
-  const [sources, setSources] = useState<RawSource[]>([]);
-  const [failed, setFailed] = useState(false);
-  const [ready, setReady] = useState(false);
-
-  useEffect(() => {
-    let cancelled = false;
-    setReady(false);
-    searchPubMed(query)
-      .then((r) => {
-        if (cancelled) return;
-        setSources(r.results);
-        setFailed(r.failed);
-      })
-      .catch(() => {
-        if (cancelled) return;
-        setSources([]);
-        setFailed(true);
-      })
-      .finally(() => { if (!cancelled) setReady(true); });
-    return () => { cancelled = true; };
-  }, [query]);
-
+export function AssistantConfidence({
+  query,
+  answer,
+  sources,
+  retrievalFailed,
+  isStreaming,
+  anchorPrefix,
+}: Props) {
   const assessment = useMemo(
     () => assessConfidence(query, answer, sources),
     [query, answer, sources],
@@ -91,19 +36,12 @@ export function AssistantConfidence({ query, answer, isStreaming, anchorPrefix }
 
   if (isStreaming || answer.trim().length < 20) return null;
 
-  if (!ready) {
-    return (
-      <div className="mt-6 pt-4" style={{ borderTop: HAIRLINE }}>
-        <span className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground/70">
-          Retrieving sources
-        </span>
-        <SourceSkeleton />
-      </div>
-    );
-  }
-
-  const { level, label, relevantSources } = assessment;
+  const { level, label } = assessment;
   const { color, Icon } = levelStyles[level];
+  // Render exactly the ranked sources sent with the answer, so the list numbering
+  // matches the inline [n] markers the model wrote.
+  const relevantSources = sources;
+  const failed = Boolean(retrievalFailed);
   const hasCitations = relevantSources.length > 0;
 
   return (

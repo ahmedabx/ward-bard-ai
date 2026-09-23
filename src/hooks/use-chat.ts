@@ -244,7 +244,13 @@ export function useChat() {
       if (userId && assistantContent) {
         const { error } = await supabase
           .from('chat_messages')
-          .insert({ session_id: sessionId, user_id: userId, role: 'assistant', content: assistantContent });
+          .insert({
+            session_id: sessionId,
+            user_id: userId,
+            role: 'assistant',
+            content: assistantContent,
+            sources: assistantSources.length ? (assistantSources as unknown as never) : null,
+          });
         if (error) console.error('Failed to save response:', error.message);
         await supabase.from('chat_sessions').update({ updated_at: new Date().toISOString() }).eq('id', sessionId);
       }

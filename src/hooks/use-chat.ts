@@ -149,6 +149,8 @@ export function useChat() {
     }
 
     let assistantContent = '';
+    let assistantSources: MessageSource[] = [];
+    let retrievalFailed = false;
 
     try {
       const allMessages = [...priorMessages, userMsg].map(m => ({ role: m.role, content: m.content }));
@@ -190,6 +192,21 @@ export function useChat() {
 
           try {
             const parsed = JSON.parse(jsonStr);
+            if (Array.isArray(parsed.medbard_sources)) {
+              assistantSources = parsed.medbard_sources as MessageSource[];
+              retrievalFailed = Boolean(parsed.medbard_retrieval_failed);
+              const capturedSources = assistantSources;
+              const capturedFailed = retrievalFailed;
+              setSessions(prev => prev.map(s => s.id === sessionId ? {
+                ...s,
+                messages: s.messages.map(m =>
+                  m.id === assistantMsgId
+                    ? { ...m, sources: capturedSources, retrievalFailed: capturedFailed }
+                    : m
+                ),
+              } : s));
+              continue;
+            }
             const delta = parsed.choices?.[0]?.delta?.content;
             if (delta) {
               assistantContent += delta;

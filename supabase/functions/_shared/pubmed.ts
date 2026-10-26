@@ -330,7 +330,7 @@ export function formatEvidenceForPrompt(outcome: RetrievalOutcome): string {
   }
   const lines = outcome.results.map((r, i) => {
     const snippet = (r.abstract || "").slice(0, 320);
-    return `[${i + 1}] ${r.title} — ${r.journal || "Journal n/a"}, ${r.year || "year n/a"}.` +
+    return `[${i + 1}] ${r.title} — ${r.journal || "Journal n/a"}, ${r.year || "year n/a"}. ${r.url}` +
       (snippet ? `\n    Abstract: ${snippet}${(r.abstract || "").length > 320 ? "…" : ""}` : "\n    Abstract: not available.");
   });
   return `RETRIEVED EVIDENCE (PubMed, published ${outcome.window.from}–${outcome.window.to}):\n${lines.join("\n")}`;

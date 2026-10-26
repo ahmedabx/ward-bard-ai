@@ -18,6 +18,8 @@ export interface ChatMessage {
   /** Ranked evidence returned with this answer; numbering matches inline [n] markers. */
   sources?: MessageSource[];
   retrievalFailed?: boolean;
+  /** follow_ups / qbank_topic parsed from the <<<META>>> block. */
+  meta?: { follow_ups?: string[]; qbank_topic?: string };
 }
 
 export interface ChatSession {
@@ -32,6 +34,41 @@ export interface SavedNote {
   question: string;
   answer: string;
   savedAt: Date;
+}
+
+// ---- <<<META>>> metadata block helpers ----
+const META_DELIM = '<<<META>>>';
+
+/** Splits the model's raw output into the visible answer and the metadata payload. */
+function splitMeta(raw: string): { visible: string; meta: string | null } {
+  const idx = raw.indexOf(META_DELIM);
+  if (idx !== -1) {
+    return { visible: raw.slice(0, idx).trimEnd(), meta: raw.slice(idx + META_DELIM.length) };
+  }
+  // Hold back any trailing partial delimiter so it never flashes mid-stream.
+  for (let n = Math.min(META_DELIM.length - 1, raw.length); n > 0; n--) {
+    if (raw.endsWith(META_DELIM.slice(0, n))) {
+      return { visible: raw.slice(0, raw.length - n), meta: null };
+    }
+  }
+  return { visible: raw, meta: null };
+}
+
+/** Parses the follow_ups / qbank_topic JSON that follows the delimiter. */
+function parseMeta(meta: string | null): { follow_ups?: string[]; qbank_topic?: string } | undefined {
+  if (!meta) return undefined;
+  const start = meta.indexOf('{');
+  const end = meta.lastIndexOf('}');
+  if (start === -1 || end <= start) return undefined;
+  try {
+    const parsed = JSON.parse(meta.slice(start, end + 1));
+    if (Array.isArray(parsed?.follow_ups) || typeof parsed?.qbank_topic === 'string') {
+      return { follow_ups: parsed.follow_ups, qbank_topic: parsed.qbank_topic };
+    }
+    return undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 let counter = 0;
@@ -210,7 +247,7 @@ export function useChat() {
             const delta = parsed.choices?.[0]?.delta?.content;
             if (delta) {
               assistantContent += delta;
-              const captured = assistantContent;
+              const captured = splitMeta(assistantContent).visible;
               setSessions(prev => prev.map(s => {
                 if (s.id !== sessionId) return s;
                 return {
@@ -229,26 +266,37 @@ export function useChat() {
       }
     } catch (err) {
       console.error('Chat error:', err);
-      assistantContent = assistantContent || '⚠️ Something went wrong. Please try again.';
+      if (!assistantContent) assistantContent = '⚠️ Something went wrong. Please try again.';
+      const errorVisible = splitMeta(assistantContent).visible || '⚠️ Something went wrong. Please try again.';
       setSessions(prev => prev.map(s => {
         if (s.id !== sessionId) return s;
         return {
           ...s,
           messages: s.messages.map(m =>
-            m.id === assistantMsgId ? { ...m, content: assistantContent } : m
+            m.id === assistantMsgId ? { ...m, content: errorVisible } : m
           ),
         };
       }));
     } finally {
       setIsLoading(false);
-      if (userId && assistantContent) {
+      const { visible: answerText, meta: metaPayload } = splitMeta(assistantContent);
+      const parsedMeta = parseMeta(metaPayload);
+      if (parsedMeta) {
+        setSessions(prev => prev.map(s => s.id !== sessionId ? s : {
+          ...s,
+          messages: s.messages.map(m =>
+            m.id === assistantMsgId ? { ...m, meta: parsedMeta } : m
+          ),
+        }));
+      }
+      if (userId && answerText) {
         const { error } = await supabase
           .from('chat_messages')
           .insert({
             session_id: sessionId,
             user_id: userId,
             role: 'assistant',
-            content: assistantContent,
+            content: answerText,
             sources: assistantSources.length ? (assistantSources as unknown as never) : null,
           });
         if (error) console.error('Failed to save response:', error.message);

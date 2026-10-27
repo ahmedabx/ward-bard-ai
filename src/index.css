@@ -181,7 +181,7 @@
 /* ---- My Assistant polish --------------------------------------------- */
 .chat-column {
   width: 100%;
-  max-width: 740px;
+  max-width: 720px;
   margin-left: auto;
   margin-right: auto;
 }
@@ -205,6 +205,19 @@
   transition: background-color 150ms ease, color 150ms ease;
 }
 .citation-chip:hover { background: hsl(var(--primary) / 0.22); }
+
+.citation-num {
+  font-size: 11px;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: hsl(var(--primary));
+  vertical-align: super;
+  padding: 0 1px;
+  cursor: pointer;
+  transition: color 150ms ease;
+}
+.citation-num:hover { color: hsl(var(--primary) / 0.8); }
+.citation-num:focus-visible { outline: 1px solid hsl(var(--primary)); outline-offset: 1px; border-radius: 2px; }
 
 .source-card { transition: background-color 150ms ease, border-color 150ms ease; }
 .source-card:hover {

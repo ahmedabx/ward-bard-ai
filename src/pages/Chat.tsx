@@ -167,14 +167,16 @@ export default function Chat() {
                 onSave={msg.role === 'assistant' ? chat.saveNote : undefined}
                 previousUserMessage={msg.role === 'assistant' ? messages[i - 1]?.content : undefined}
                 isStreaming={msg.role === 'assistant' && isLast && isLoading}
+                onFollowUp={msg.role === 'assistant' ? send : undefined}
+                mode={mode}
               />
             );
           })}
-          {isLoading && messages[messages.length - 1]?.role !== 'assistant' && (
+          {isLoading && messages[messages.length - 1]?.role === 'assistant' && !messages[messages.length - 1]?.content && (
             <div className="mb-10 space-y-2.5" aria-label="Generating response">
-              <div className="h-2.5 rounded-full bg-foreground/[0.07] evidence-pulse w-2/3" />
-              <div className="h-2.5 rounded-full bg-foreground/[0.07] evidence-pulse w-full" style={{ animationDelay: '120ms' }} />
-              <div className="h-2.5 rounded-full bg-foreground/[0.07] evidence-pulse w-5/6" style={{ animationDelay: '240ms' }} />
+              <div className="h-2.5 rounded-full bg-primary/[0.12] w-2/3" />
+              <div className="h-2.5 rounded-full bg-primary/[0.12] w-full" />
+              <div className="h-2.5 rounded-full bg-primary/[0.12] w-5/6" />
             </div>
           )}
           <div ref={messagesEndRef} />

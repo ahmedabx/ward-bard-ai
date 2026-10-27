@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { ShieldCheck, ShieldAlert, Shield, ExternalLink } from 'lucide-react';
+import { ShieldCheck, ShieldAlert, Shield } from 'lucide-react';
 import { assessConfidence, type RawSource, type ConfidenceLevel } from '@/lib/confidence';
 
 interface Props {

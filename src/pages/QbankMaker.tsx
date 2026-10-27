@@ -78,6 +78,14 @@ export default function QbankMaker() {
   const [quizId, setQuizId] = useState<string | null>(null);
   const [history, setHistory] = useState<QuizRow[]>([]);
 
+  // Prefill topic from the My Assistant "Quiz me on this" handoff; the mode
+  // param is accepted but ignored for now.
+  useEffect(() => {
+    const t = searchParams.get('topic');
+    if (t) setTopic(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const loadHistory = useCallback(async () => {
     const { data, error: e } = await supabase
       .from('qbank_quizzes')

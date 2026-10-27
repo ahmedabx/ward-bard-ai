@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Loader2, FileQuestion, RotateCcw, CheckCircle2, XCircle, ArrowRight, Sparkles } from 'lucide-react';
 import { UsageBadge } from '@/components/UsageBadge';
@@ -61,6 +62,7 @@ interface QuizRow {
 }
 
 export default function QbankMaker() {
+  const [searchParams] = useSearchParams();
   const [phase, setPhase] = useState<Phase>('setup');
   const [topic, setTopic] = useState('');
   const [count, setCount] = useState(5);
@@ -75,6 +77,14 @@ export default function QbankMaker() {
   const [locked, setLocked] = useState(false);
   const [quizId, setQuizId] = useState<string | null>(null);
   const [history, setHistory] = useState<QuizRow[]>([]);
+
+  // Prefill topic from the My Assistant "Quiz me on this" handoff; the mode
+  // param is accepted but ignored for now.
+  useEffect(() => {
+    const t = searchParams.get('topic');
+    if (t) setTopic(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const loadHistory = useCallback(async () => {
     const { data, error: e } = await supabase

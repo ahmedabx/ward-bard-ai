@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { ShieldCheck, ShieldAlert, Shield, ExternalLink } from 'lucide-react';
+import { ShieldCheck, ShieldAlert, Shield } from 'lucide-react';
 import { assessConfidence, type RawSource, type ConfidenceLevel } from '@/lib/confidence';
 
 interface Props {
@@ -67,41 +67,37 @@ export function AssistantConfidence({
       )}
 
       {hasCitations && (
-        <ol className="mt-3 space-y-1.5" aria-label="Sources for this response">
-          {relevantSources.map((r, i) => (
-            <li key={r.pmid}>
-              <a
-                id={`${anchorPrefix}-src-${i + 1}`}
-                href={r.url || `https://pubmed.ncbi.nlm.nih.gov/${r.pmid}/`}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label={`Source ${i + 1}: ${r.title} on PubMed (opens in a new tab)`}
-                className="source-card group flex gap-3 rounded-md px-3 py-2.5 min-h-[44px] items-start no-underline focus:outline-none focus-visible:ring-1 focus-visible:ring-primary"
-                style={{ border: HAIRLINE, borderLeft: '2px solid transparent' }}
-              >
-                <span className="mt-[1px] text-[10px] tabular-nums text-primary/80 shrink-0 w-4">
-                  {i + 1}
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block text-[12.5px] leading-snug text-foreground/90 group-hover:text-foreground">
-                    {r.title}
+        <div className="mt-4">
+          <span className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground/70">Sources</span>
+          <ol className="mt-1" aria-label="Sources for this response">
+            {relevantSources.map((r, i) => (
+              <li key={r.pmid} style={i > 0 ? { borderTop: HAIRLINE } : undefined}>
+                <a
+                  id={`${anchorPrefix}-src-${i + 1}`}
+                  href={r.url || `https://pubmed.ncbi.nlm.nih.gov/${r.pmid}/`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={`Source ${i + 1}: ${r.title} on PubMed (opens in a new tab)`}
+                  className="group flex gap-3 items-baseline py-2.5 min-h-[44px] no-underline focus:outline-none focus-visible:ring-1 focus-visible:ring-primary"
+                >
+                  <span className="text-[11px] tabular-nums text-primary shrink-0 w-4">
+                    {i + 1}
                   </span>
-                  <span className="mt-1 block text-[10.5px] text-muted-foreground/70">
-                    {r.journal && <span className="italic">{r.journal}</span>}
-                    {r.journal && r.year ? ' · ' : ''}
-                    {r.year}
-                    <span className="ml-1 text-muted-foreground/50">· PubMed</span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-[13px] leading-snug text-foreground/90 group-hover:text-foreground">
+                      {r.title}
+                    </span>
+                    <span className="mt-0.5 block text-[11px] text-muted-foreground/70">
+                      {r.journal && <span className="italic">{r.journal}</span>}
+                      {r.journal && r.year ? ' · ' : ''}
+                      {r.year}
+                    </span>
                   </span>
-                </span>
-                <ExternalLink
-                  size={12}
-                  aria-hidden
-                  className="mt-0.5 shrink-0 text-muted-foreground/40 group-hover:text-primary"
-                />
-              </a>
-            </li>
-          ))}
-        </ol>
+                </a>
+              </li>
+            ))}
+          </ol>
+        </div>
       )}
     </div>
   );

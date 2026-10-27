@@ -1,33 +1,92 @@
 import { motion } from 'framer-motion';
-import { Copy, Bookmark, ThumbsUp, ThumbsDown, Check } from 'lucide-react';
-import { useMemo, useState } from 'react';
-import ReactMarkdown from 'react-markdown';
+import { Copy, Bookmark, ThumbsUp, ThumbsDown, Check, ArrowRight } from 'lucide-react';
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import type { ChatMessage } from '@/hooks/use-chat';
+import { AssistantAnswer } from '@/components/AssistantAnswer';
 import { AssistantConfidence } from '@/components/AssistantConfidence';
+
+const HAIRLINE = '0.5px solid hsl(var(--hairline) / var(--hairline-alpha))';
 
 interface ChatMessageBubbleProps {
   message: ChatMessage;
   onSave?: (question: string, answer: string) => void;
   previousUserMessage?: string;
   isStreaming?: boolean;
+  /** Sends a follow-up question as the next user message. */
+  onFollowUp?: (question: string) => void;
+  /** Current study mode, passed to Qbank Maker as a query param. */
+  mode?: string;
 }
 
-/** Turn bare `[1]` citation markers into markdown links pointing at the source card. */
-function linkifyCitations(text: string, anchorPrefix: string) {
-  return text.replace(/(?<!\])\[(\d{1,2})\](?!\()/g, (_m, n) => `[\\[${n}\\]](#${anchorPrefix}-src-${n})`);
+/** Flat follow-up rows + Qbank handoff shown under the sources. */
+function FollowUps({
+  followUps,
+  qbankTopic,
+  onFollowUp,
+  mode,
+}: {
+  followUps: string[];
+  qbankTopic?: string;
+  onFollowUp?: (q: string) => void;
+  mode?: string;
+}) {
+  const navigate = useNavigate();
+
+  const quizMe = () => {
+    if (!qbankTopic) return;
+    const params = new URLSearchParams({ topic: qbankTopic });
+    if (mode) params.set('mode', mode);
+    navigate(`/qbank?${params.toString()}`);
+  };
+
+  return (
+    <div className="mt-6 pt-4" style={{ borderTop: HAIRLINE }}>
+      <span className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground/70">Continue</span>
+      <div className="mt-1">
+        {followUps.map((q, i) => (
+          <button
+            key={q}
+            type="button"
+            onClick={() => onFollowUp?.(q)}
+            className="group w-full flex items-center justify-between gap-3 py-2.5 min-h-[44px] text-left text-[13px] text-muted-foreground hover:text-foreground transition-colors"
+            style={i > 0 ? { borderTop: HAIRLINE } : undefined}
+          >
+            <span className="min-w-0">{q}</span>
+            <ArrowRight
+              size={13}
+              aria-hidden
+              className="shrink-0 text-muted-foreground/50 group-hover:text-primary transition-colors"
+            />
+          </button>
+        ))}
+      </div>
+      {qbankTopic && (
+        <button
+          type="button"
+          onClick={quizMe}
+          className="mt-3 text-[12px] text-primary hover:underline underline-offset-2"
+        >
+          Quiz me on this
+        </button>
+      )}
+    </div>
+  );
 }
 
-export function ChatMessageBubble({ message, onSave, previousUserMessage, isStreaming }: ChatMessageBubbleProps) {
+export function ChatMessageBubble({
+  message,
+  onSave,
+  previousUserMessage,
+  isStreaming,
+  onFollowUp,
+  mode,
+}: ChatMessageBubbleProps) {
   const [copied, setCopied] = useState(false);
   const [saved, setSaved] = useState(false);
   const [feedback, setFeedback] = useState<'up' | 'down' | null>(null);
   const isUser = message.role === 'user';
   const anchorPrefix = `m-${message.id}`;
-
-  const body = useMemo(
-    () => (isUser ? message.content : linkifyCitations(message.content, anchorPrefix)),
-    [message.content, isUser, anchorPrefix],
-  );
 
   const handleCopy = () => {
     navigator.clipboard.writeText(message.content);
@@ -66,6 +125,9 @@ export function ChatMessageBubble({ message, onSave, previousUserMessage, isStre
     );
   }
 
+  const followUps = !isStreaming ? message.meta?.follow_ups?.filter(Boolean) ?? [] : [];
+  const qbankTopic = message.meta?.qbank_topic;
+
   return (
     <motion.div
       className="mb-10"
@@ -73,70 +135,11 @@ export function ChatMessageBubble({ message, onSave, previousUserMessage, isStre
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
     >
-      <div className="ward-bard-response max-w-none text-[15px] leading-[1.7] text-foreground/85">
-        <ReactMarkdown
-          components={{
-            h1: ({ children }) => <h1 className="text-[19px] font-semibold text-foreground mt-0 mb-3">{children}</h1>,
-            h2: ({ children }) => <h2 className="text-[16px] font-semibold text-foreground mt-7 mb-2.5">{children}</h2>,
-            h3: ({ children }) => <h3 className="text-[14px] font-semibold text-foreground/90 mt-5 mb-2 uppercase tracking-[0.06em]">{children}</h3>,
-            p: ({ children }) => <p className="mb-4 last:mb-0 leading-[1.7]">{children}</p>,
-            ul: ({ children }) => <ul className="space-y-1 mb-4">{children}</ul>,
-            ol: ({ children }) => <ol className="space-y-1 mb-4 list-decimal pl-5">{children}</ol>,
-            li: ({ children }) => <li className="leading-[1.65] marker:text-primary/60">{children}</li>,
-            strong: ({ children }) => <strong className="text-foreground font-semibold">{children}</strong>,
-            em: ({ children }) => <em className="text-foreground/80">{children}</em>,
-            a: ({ children, href }) => {
-              const isCitation = typeof href === 'string' && href.includes('-src-');
-              if (isCitation) {
-                return (
-                  <a
-                    href={href}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      const el = document.querySelector(href!);
-                      el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                      (el as HTMLElement | null)?.classList.add('source-flash');
-                      setTimeout(() => (el as HTMLElement | null)?.classList.remove('source-flash'), 1200);
-                    }}
-                    className="citation-chip"
-                  >
-                    {children}
-                  </a>
-                );
-              }
-              return (
-                <a
-                  href={href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-primary underline underline-offset-2 decoration-primary/40 hover:decoration-primary"
-                >
-                  {children}
-                </a>
-              );
-            },
-            blockquote: ({ children }) => (
-              <blockquote className="border-l-2 border-primary/40 pl-4 my-4 text-muted-foreground">{children}</blockquote>
-            ),
-            code: ({ children, className }) => {
-              const isBlock = className?.includes('language-');
-              if (isBlock) {
-                return (
-                  <code className={`block bg-card rounded-md p-3 my-4 text-[12.5px] font-mono overflow-x-auto ${className}`}>
-                    {children}
-                  </code>
-                );
-              }
-              return (
-                <code className="font-mono text-[13px] text-foreground bg-foreground/[0.06] px-1.5 py-0.5 rounded">
-                  {children}
-                </code>
-              );
-            },
-            hr: () => <hr className="border-0 my-6" style={{ borderTop: '0.5px solid hsl(var(--hairline) / var(--hairline-alpha))' }} />,
-          }}
-        >{body}</ReactMarkdown>
-      </div>
+      <AssistantAnswer
+        content={message.content}
+        sources={message.sources ?? []}
+        anchorPrefix={anchorPrefix}
+      />
 
       {previousUserMessage && message.content.length > 10 && (
         <AssistantConfidence
@@ -147,6 +150,10 @@ export function ChatMessageBubble({ message, onSave, previousUserMessage, isStre
           isStreaming={isStreaming}
           anchorPrefix={anchorPrefix}
         />
+      )}
+
+      {followUps.length > 0 && (
+        <FollowUps followUps={followUps} qbankTopic={qbankTopic} onFollowUp={onFollowUp} mode={mode} />
       )}
 
       {message.content.length > 10 && (

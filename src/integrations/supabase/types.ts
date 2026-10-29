@@ -157,6 +157,114 @@ export type Database = {
         }
         Relationships: []
       }
+      practice_items: {
+        Row: {
+          created_at: string
+          id: string
+          is_correct: boolean | null
+          item_type: string
+          payload: Json
+          session_id: string
+          sort_order: number
+          time_spent_ms: number | null
+          topic_id: string | null
+          user_answer: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_correct?: boolean | null
+          item_type: string
+          payload: Json
+          session_id: string
+          sort_order?: number
+          time_spent_ms?: number | null
+          topic_id?: string | null
+          user_answer?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_correct?: boolean | null
+          item_type?: string
+          payload?: Json
+          session_id?: string
+          sort_order?: number
+          time_spent_ms?: number | null
+          topic_id?: string | null
+          user_answer?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "practice_items_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "practice_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "practice_items_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "topics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      practice_sessions: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          custom_topic: string | null
+          difficulty: string
+          exam: string | null
+          format: string
+          id: string
+          item_count: number
+          mode: string
+          score: number | null
+          started_at: string
+          status: string
+          topic_ids: string[]
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          custom_topic?: string | null
+          difficulty?: string
+          exam?: string | null
+          format: string
+          id?: string
+          item_count?: number
+          mode: string
+          score?: number | null
+          started_at?: string
+          status?: string
+          topic_ids?: string[]
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          custom_topic?: string | null
+          difficulty?: string
+          exam?: string | null
+          format?: string
+          id?: string
+          item_count?: number
+          mode?: string
+          score?: number | null
+          started_at?: string
+          status?: string
+          topic_ids?: string[]
+          user_id?: string
+        }
+        Relationships: []
+      }
       qbank_quizzes: {
         Row: {
           answers: Json
@@ -201,6 +309,50 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      topics: {
+        Row: {
+          case_eligible: boolean
+          created_at: string
+          exam: string
+          id: string
+          mode: string
+          name: string
+          parent_id: string | null
+          sort_order: number
+          system: string
+        }
+        Insert: {
+          case_eligible?: boolean
+          created_at?: string
+          exam: string
+          id?: string
+          mode: string
+          name: string
+          parent_id?: string | null
+          sort_order?: number
+          system: string
+        }
+        Update: {
+          case_eligible?: boolean
+          created_at?: string
+          exam?: string
+          id?: string
+          mode?: string
+          name?: string
+          parent_id?: string | null
+          sort_order?: number
+          system?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "topics_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "topics"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {

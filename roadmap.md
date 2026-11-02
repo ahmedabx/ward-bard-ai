@@ -1,8 +1,9 @@
 # Roadmap — Merge Qbank Maker + My Patient into "Practice"
 
-- [ ] DB: topics / practice_sessions / practice_items tables, RLS, grants, legacy backfill (migration)
-- [ ] DB: topics seed (separate editable SQL file, organ-system names only) + apply
-- [ ] Edge function: practice-sessions (create-session validation + per-user rate limit), deploy
+- [x] DB: topics / practice_sessions / practice_items tables, RLS, grants, legacy backfill (migration)
+- [x] DB: topics seed (drizzle/seed/topics_seed.sql, organ-system names only) + applied (942 rows)
+- [x] Edge function: practice-sessions (create-session validation + per-user rate limit) written
+- [ ] Edge function: practice-sessions deployed
 - [ ] Shared components: TopicPicker, PracticeQuestion (one MCQ component, both formats)
 - [ ] PracticeSetup (/practice): format, exam, mode, topic picker, settings, Start, recent 5 sessions, quota checks
 - [ ] PracticeSession (/practice/session/:id): questions flow + case stage flow, resume, persistence

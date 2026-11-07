@@ -97,11 +97,11 @@ export function PracticeSetup() {
       <div className="mx-auto max-w-3xl">
         <div className="mb-6 flex items-center gap-3"><BookOpen size={19} className="text-primary" /><div><h1 className="font-serif-display text-xl">Practice</h1><p className="mt-0.5 text-xs text-muted-foreground">Build a question set or work through a clinical case.</p></div></div>
         <div className="space-y-6">
-          <section><FieldLabel>Format</FieldLabel><ChoiceGroup value={format} choices={[{ value: 'questions', label: 'Questions' }, { value: 'cases', label: 'Cases' }]} onChange={v => { setFormat(v); setTopicIds(new Set()); }} /></section>
-          <section><FieldLabel>Exam</FieldLabel><ChoiceGroup value={exam} choices={EXAMS.map(x => ({ value: x.key, label: x.label }))} onChange={setExam} /></section>
-          <section><FieldLabel>Mode</FieldLabel><ChoiceGroup value={mode} choices={MODES} onChange={setMode} /></section>
-          {format === 'questions' && <section><FieldLabel>Difficulty</FieldLabel><ChoiceGroup value={difficulty} choices={DIFFICULTIES} onChange={setDifficulty} /></section>}
-          <section><FieldLabel>{format === 'cases' ? 'Cases' : 'Questions'}</FieldLabel><ChoiceGroup value={count} choices={(format === 'cases' ? CASE_LENGTHS : QUESTION_COUNTS).map(n => ({ value: n, label: String(n) }))} onChange={setCount} /></section>
+          <section><FieldLabel>Format</FieldLabel><ChoiceGroup<PracticeFormat> value={format} choices={[{ value: 'questions', label: 'Questions' }, { value: 'cases', label: 'Cases' }]} onChange={v => { setFormat(v); setTopicIds(new Set()); }} /></section>
+          <section><FieldLabel>Exam</FieldLabel><ChoiceGroup<string> value={exam} choices={EXAMS.map(x => ({ value: x.key, label: x.label }))} onChange={setExam} /></section>
+          <section><FieldLabel>Mode</FieldLabel><ChoiceGroup<PracticeMode> value={mode} choices={MODES} onChange={setMode} /></section>
+          {format === 'questions' && <section><FieldLabel>Difficulty</FieldLabel><ChoiceGroup<'easy' | 'mixed' | 'hard'> value={difficulty} choices={DIFFICULTIES.map(d => ({ value: d.key, label: d.label }))} onChange={setDifficulty} /></section>}
+          <section><FieldLabel>{format === 'cases' ? 'Cases' : 'Questions'}</FieldLabel><ChoiceGroup<number> value={count} choices={(format === 'cases' ? CASE_LENGTHS : QUESTION_COUNTS).map(n => ({ value: n, label: String(n) }))} onChange={setCount} /></section>
           <section><TopicPicker exam={exam} mode={mode} format={format} selectedIds={topicIds} onToggle={toggleTopic} customTopic={customTopic} setCustomTopic={setCustomTopic} customOpen={customOpen} setCustomOpen={setCustomOpen} /></section>
           {format === 'cases' && <p className="text-xs text-muted-foreground">Case sessions use eligible specialty topics. Daily case availability remains limited to two.</p>}
           {format === 'questions' && <p className="text-xs text-muted-foreground">Questions remaining today: {questionUsage.remaining}/40</p>}
